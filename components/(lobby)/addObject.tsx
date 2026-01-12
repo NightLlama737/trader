@@ -53,10 +53,10 @@ export default function AddObject() {
         maxWidth: "600px",
         margin: "20px auto",
         padding: "20px",
-        border: "1px solid aqua",
+        border: "none",
         borderRadius: "5px",
-        backgroundColor: "#222",
-        color: "white",
+        backgroundColor: "#black",
+        color: "green",
         display: "flex",
         flexDirection: "column",
         gap: "15px",
@@ -78,13 +78,17 @@ export default function AddObject() {
         style={{
           padding: "10px",
           borderRadius: "5px",
-          border: "1px solid aqua",
-          backgroundColor: "#444",
-          color: "white",
-          cursor: "pointer",
+          border: "none",
+          backgroundColor: "black",
+          color: "green",
+          fontFamily: "monospace", // CLI font
+          cursor: "pointer", // ukazatel
+          transition: "background-color 0.3s", // plynulá změna barvy
         }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
       >
-        {file ? `Selected: ${file.name}` : "Browse File"}
+        {file ? `[ Selected: ${file.name} ]` : "[ Browse File ]"}
       </button>
 
       <button
@@ -93,13 +97,13 @@ export default function AddObject() {
         style={{
           padding: "10px",
           borderRadius: "5px",
-          border: "1px solid aqua",
-          backgroundColor: uploading ? "#555" : "#444",
-          color: "white",
+          border: "none",
+          backgroundColor: "black",
+          color: uploading ? "lightgreen" : "green",
           cursor: !file || uploading ? "not-allowed" : "pointer",
         }}
       >
-        {uploading ? "Uploading..." : "Upload"}
+        {uploading ? "[ Uploading... ]" : "[ Upload ]"}
       </button>
     </div>
   );

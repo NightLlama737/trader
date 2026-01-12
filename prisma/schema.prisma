@@ -34,7 +34,7 @@ model OffModel {
   modelId     String?
   createdAt   DateTime @default(now())
   userId      String
-  key         String
+  key         String   @unique
   model       Model?   @relation(fields: [modelId], references: [id])
   user        User     @relation(fields: [userId], references: [id])
 }

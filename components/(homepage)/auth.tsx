@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTypewriter } from "../(homepage)/useTypeWriter";
+import { Pass } from "three/examples/jsm/Addons.js";
+import { log } from "console";
 
 export default function Auth() {
   const [emailOrNick, setEmailOrNick] = useState("");
@@ -67,135 +69,171 @@ export default function Auth() {
         color: "white",
         display: "flex",
         alignItems: "center",
-        width: "80%",
+        width: "500px",
         flexDirection: "column",
         gap: "10px",
       }}
     >
-      <h2>{title}</h2>
+      <h2 style={{ color: "green" }}>{title}</h2>
 
       {userExists === null && (
         <>
-          <input
-            type="text"
-            style={{
-              borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "40%",
-              backgroundColor: "black",
-            }}
-            value={emailOrNick}
-            onChange={(e) => setEmailOrNick(e.target.value)}
-          />
+          <label style={{ width: "100%", color: "green" }}>
+            Email or Nickname:
+            <input
+              type="text"
+              style={{
+                outline: "none" /* odstraní standardní ohraničení při focus */,
+                color: "lightgreen",
+                paddingLeft: "10px",
+                border: "none",
+                caretColor: "lightgreen" /* barva kurzoru */,
+                width: "60%",
+                backgroundColor: "black",
+              }}
+              value={emailOrNick}
+              onChange={(e) => setEmailOrNick(e.target.value)}
+            />
+          </label>
 
           <button
             style={{
               marginTop: "20px",
               height: "40px",
               borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "10%",
+              color: "green",
+              border: "none",
+              width: "40%",
               backgroundColor: "black",
+              fontFamily: "monospace", // CLI font
+              cursor: "pointer", // ukazatel
+              transition: "background-color 0.3s", // plynulá změna barvy
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
             onClick={findUser}
           >
-            Find User
+            <h2>[ Find User ]</h2>
           </button>
         </>
       )}
 
       {userExists === true && (
         <>
-          <input
-            style={{
-              borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "40%",
-              backgroundColor: "black",
-            }}
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <label style={{ width: "100%", color: "green" }}>
+            Password:
+            <input
+              type="password"
+              style={{
+                outline: "none" /* odstraní standardní ohraničení při focus */,
+                color: "lightgreen",
+                paddingLeft: "10px",
+                border: "none",
+                caretColor: "lightgreen" /* barva kurzoru */,
+                width: "70%",
+                backgroundColor: "black",
+              }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
 
           <button
             style={{
               marginTop: "20px",
               height: "40px",
               borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "10%",
+              color: "green",
+              border: "none",
+              width: "40%",
               backgroundColor: "black",
+              fontFamily: "monospace", // CLI font
+              cursor: "pointer", // ukazatel
+              transition: "background-color 0.3s", // plynulá změna barvy
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
             onClick={login}
           >
-            Login
+            <h2>[ Log in ]</h2>
           </button>
         </>
       )}
 
       {userExists === false && (
         <>
-          <input
-            style={{
-              borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "40%",
-              backgroundColor: "black",
-            }}
-            type="text"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <label style={{ width: "100%", color: "green" }}>
+            Email:
+            <input
+              type="text"
+              style={{
+                outline: "none" /* odstraní standardní ohraničení při focus */,
+                color: "lightgreen",
+                paddingLeft: "10px",
+                border: "none",
+                caretColor: "lightgreen" /* barva kurzoru */,
+                width: "70%",
+                backgroundColor: "black",
+              }}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
 
-          <input
-            style={{
-              borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "40%",
-              backgroundColor: "black",
-            }}
-            type="text"
-            placeholder="Nickname"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-          />
+          <label style={{ width: "100%", color: "green" }}>
+            Nickname:
+            <input
+              type="text"
+              style={{
+                outline: "none" /* odstraní standardní ohraničení při focus */,
+                color: "lightgreen",
+                paddingLeft: "10px",
+                border: "none",
+                caretColor: "lightgreen" /* barva kurzoru */,
+                width: "70%",
+                backgroundColor: "black",
+              }}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
+          </label>
 
-          <input
-            style={{
-              borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "40%",
-              backgroundColor: "black",
-            }}
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <label style={{ width: "100%", color: "green" }}>
+            Password:
+            <input
+              type="password"
+              style={{
+                outline: "none" /* odstraní standardní ohraničení při focus */,
+                color: "lightgreen",
+                paddingLeft: "10px",
+                border: "none",
+                caretColor: "lightgreen" /* barva kurzoru */,
+                width: "70%",
+                backgroundColor: "black",
+              }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
 
           <button
             style={{
               marginTop: "20px",
               height: "40px",
               borderRadius: "5px",
-              color: "white",
-              border: "1px solid aqua",
-              width: "10%",
+              color: "green",
+              border: "none",
+              width: "40%",
               backgroundColor: "black",
+              fontFamily: "monospace", // CLI font
+              cursor: "pointer", // ukazatel
+              transition: "background-color 0.3s", // plynulá změna barvy
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
             onClick={signup}
           >
-            Sign Up
+            <h2>[ Sign Up ]</h2>
           </button>
         </>
       )}

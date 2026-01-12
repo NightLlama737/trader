@@ -31,9 +31,9 @@ export default function Header() {
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/lobby")}
         >
-          <h1 style={{ margin: 0 }}>[ Trading ]</h1>
+          <h1 style={{ margin: 0 }}>[ Lobby ]</h1>
         </button>
 
         <button

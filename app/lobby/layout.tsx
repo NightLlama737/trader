@@ -17,7 +17,7 @@ export default function LobbyLayout({
         style={{
           position: "fixed",
           width: "100%",
-          borderBottom: "2px solid aqua",
+          borderBottom: "2px dashed green",
           display: "flex",
           flexDirection: "row",
           justifyContent: "space-between",
@@ -31,7 +31,6 @@ export default function LobbyLayout({
 
       <div
         style={{
-          color: "white",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",

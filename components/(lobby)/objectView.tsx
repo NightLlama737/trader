@@ -9,34 +9,31 @@ import { useRouter, useSearchParams } from "next/navigation";
 type Model = {
   id: string;
   key: string;
-  url: string;
+  url: string; // presigned URL
 };
 
 export default function ObjectView() {
   const searchParams = useSearchParams();
-  const key = searchParams.get("key"); // string | null
+  const key = searchParams.get("key");
   const mountRef = useRef<HTMLDivElement>(null);
   const [model, setModel] = useState<Model | null>(null);
   const router = useRouter();
 
-  // 1️⃣ Fetch presigned URL / S3 URL podle key
+  // 1️⃣ Fetch presigned URL
   useEffect(() => {
     if (!key) return;
 
-    fetch(`/api/models?key=${encodeURIComponent(key)}`)
+    fetch(`/api/getSignedUrl?key=${encodeURIComponent(key)}`)
       .then((res) => res.json())
-      .then((data) => setModel(data.model))
+      .then((data) => setModel(data.model || { id: key, key, url: data.url }))
       .catch(console.error);
   }, [key]);
 
-  // 2️⃣ ESC → back to lobby
+  // 2️⃣ ESC → zpět do lobby
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        router.push("/lobby"); // nebo router.back() pokud chceš předchozí stránku
-      }
+      if (e.key === "Escape") router.push("/lobby");
     };
-
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [router]);
@@ -45,24 +42,29 @@ export default function ObjectView() {
   useEffect(() => {
     if (!mountRef.current || !model) return;
 
-    const width = 800;
-    const height = 500;
+    const container = mountRef.current;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
 
+    const width = container.clientWidth;
+    const height = container.clientHeight;
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    camera.position.z = 5;
+
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
-    mountRef.current.innerHTML = "";
-    mountRef.current.appendChild(renderer.domElement);
+
+    if (!container.contains(renderer.domElement)) {
+      container.appendChild(renderer.domElement);
+    }
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dir = new THREE.DirectionalLight(0xffffff, 1);
-    dir.position.set(5, 5, 5);
-    scene.add(dir);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 5, 5);
+    scene.add(dirLight);
 
     const loader = new GLTFLoader();
     loader.load(
@@ -71,24 +73,22 @@ export default function ObjectView() {
         const obj = gltf.scene;
         scene.add(obj);
 
-        // vycentrování
         const box = new THREE.Box3().setFromObject(obj);
         const center = box.getCenter(new THREE.Vector3());
         obj.position.sub(center);
 
-        // fit camera
+        // Fit camera
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         const fov = camera.fov * (Math.PI / 180);
         const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
         camera.position.set(0, maxDim * 0.5, cameraZ);
         camera.lookAt(0, 0, 0);
-
         controls.target.set(0, 0, 0);
         controls.update();
       },
       undefined,
-      (error) => console.error("Error loading GLTF:", error)
+      (err) => console.error("Error loading GLTF:", err)
     );
 
     const animate = () => {
@@ -98,9 +98,12 @@ export default function ObjectView() {
     };
     animate();
 
+    // Cleanup renderer
     return () => {
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
       renderer.dispose();
-      mountRef.current?.removeChild(renderer.domElement);
     };
   }, [model]);
 
@@ -134,7 +137,8 @@ export default function ObjectView() {
             background: "#111",
           }}
         />
-        {/* Sidebar s popiskem a tlačítky */}
+
+        {/* Sidebar */}
         <div
           style={{
             width: 300,
@@ -148,7 +152,9 @@ export default function ObjectView() {
           }}
         >
           <h4>{model.key}</h4>
-          <button
+          <a
+            href={model.url}
+            download={model.key.split("/").pop()}
             style={{
               display: "inline-block",
               backgroundColor: "aqua",
@@ -156,28 +162,13 @@ export default function ObjectView() {
               borderRadius: "4px",
               textDecoration: "none",
               fontWeight: "bold",
+              padding: "10px",
+              textAlign: "center",
               cursor: "pointer",
             }}
           >
-            <a
-              href={model.url} // presigned URL
-              download={model.key.split("/").pop()} // název souboru
-              style={{
-                display: "inline-block",
-                backgroundColor: "aqua",
-                color: "#000",
-                borderRadius: "4px",
-                textDecoration: "none",
-                fontWeight: "bold",
-                padding: "10px",
-                textAlign: "center",
-                cursor: "pointer",
-              }}
-            >
-              Download
-            </a>
-          </button>
-
+            Download
+          </a>
           <button
             style={{
               display: "inline-block",
@@ -197,6 +188,7 @@ export default function ObjectView() {
           </button>
         </div>
       </div>
+
       <h3
         style={{
           position: "absolute",

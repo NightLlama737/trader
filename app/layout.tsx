@@ -17,11 +17,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         style={{
-          fontFamily: "Monaco",
+          fontFamily: "monospace", // CLI font
+          color: "green",
           padding: 0,
           margin: 0,
         }}
-        className="bg-red-500"
       >
         {children}
       </body>

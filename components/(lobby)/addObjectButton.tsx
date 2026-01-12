@@ -8,25 +8,25 @@ export default function AddObjectButton() {
     <button
       style={{
         position: "fixed",
-        display: "flex",
-        bottom: "20px",
-        left: "50%",
-        width: "100px",
-        backgroundColor: "transparent",
-        height: "100px",
-        alignItems: "center",
-        justifyContent: "center",
-        transform: "translateX(-50%)",
-        padding: "10px 20px",
-        color: "aqua",
-        fontSize: "100px",
-        marginBottom: "40px",
+
+        left: "45%",
+        padding: "0px",
+        borderRadius: "5px",
+        color: "green",
         border: "none",
-        cursor: "pointer",
+        bottom: "20px",
+
+        width: "12%",
+        backgroundColor: "black",
+        fontFamily: "monospace", // CLI font
+        cursor: "pointer", // ukazatel
+        transition: "background-color 0.3s", // plynulá změna barvy
       }}
+      onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
+      onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
       onClick={() => router.push("/lobby/addObject")}
     >
-      +
+      <h1 style={{ margin: 0 }}>[ Trading ]</h1>
     </button>
   );
 }
