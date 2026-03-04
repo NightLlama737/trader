@@ -8,74 +8,10 @@ export default function Header() {
   const router = useRouter();
   return (
     <>
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "row",
-        }}
-      >
-        <button
-          style={{
-            marginLeft: "2%",
-            marginTop: "20px",
-            padding: "0px",
-            borderRadius: "5px",
-            color: "green",
-            border: "none",
-            width: "12%",
-            backgroundColor: "black",
-            fontFamily: "monospace", // CLI font
-            cursor: "pointer", // ukazatel
-            transition: "background-color 0.3s", // plynulá změna barvy
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
-          onClick={() => router.push("/dashboard")}
-        >
-          <h1 style={{ margin: 0 }}>[ Trading ]</h1>
-        </button>
-
-        <button
-          style={{
-            marginLeft: "2%",
-            marginTop: "20px",
-            padding: "0px",
-            borderRadius: "5px",
-            color: "green",
-            border: "none",
-            width: "12%",
-            backgroundColor: "black",
-            fontFamily: "monospace", // CLI font
-            cursor: "pointer", // ukazatel
-            transition: "background-color 0.3s", // plynulá změna barvy
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
-          onClick={() => router.push("/dashboard")}
-        >
-          <h1 style={{ margin: 0 }}>[ Setting ]</h1>
-        </button>
-        <button
-          style={{
-            marginLeft: "2%",
-            marginTop: "20px",
-            padding: "0px",
-            borderRadius: "5px",
-            color: "green",
-            border: "none",
-            width: "12%",
-            backgroundColor: "black",
-            fontFamily: "monospace", // CLI font
-            cursor: "pointer", // ukazatel
-            transition: "background-color 0.3s", // plynulá změna barvy
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
-          onClick={() => router.push("/")}
-        >
-          <h1 style={{ margin: 0 }}>[ Exit ]</h1>
-        </button>
+      <div className="w-full flex flex-row">
+        <button className="btn-glass text-green-400 ml-[2%] mt-5 w-[12%]" onClick={() => router.push("/dashboard")}>[ Trading ]</button>
+        <button className="btn-glass text-green-400 ml-[2%] mt-5 w-[12%]" onClick={() => router.push("/dashboard")}>[ Setting ]</button>
+        <button className="btn-glass text-green-400 ml-[2%] mt-5 w-[12%]" onClick={() => router.push("/")}>[ Exit ]</button>
       </div>
       <Logo />
     </>

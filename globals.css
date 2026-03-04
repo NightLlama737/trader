@@ -2,3 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 25%, #3b82f6 50%, #ec4899 75%, #be185d 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #ffffff;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+/* Smooth button transitions */
+button {
+  border-radius: 0.75rem;
+  transition: all 0.3s ease-in-out;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(236, 72, 153, 0.4);
+}
+
+/* Input and form elements */
+input, textarea, select {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  transition: all 0.3s ease-in-out;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: rgba(236, 72, 153, 0.8);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(236, 72, 153, 0.5);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 153, 0.8);
+}
+
+/* Container with gradient background */
+.gradient-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 25%, #3b82f6 50%, #ec4899 75%, #be185d 100%);
+}
+
+/* Media elements z-index */
+.media-base {
+  z-index: 1;
+}
+
+.media-hidden {
+  display: none;
+}
+
+/* Button styles */
+.btn-glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 192, 203, 0.6));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(236, 72, 153, 0.3);
+  padding: 1rem 2rem;
+  border-radius: 9999px;
+  z-index: 10;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-glass:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 40px rgba(236, 72, 153, 0.5);
+}
+
+.btn-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Fade overlay */
+.fade-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  transition: all 0.2s ease-in-out;
+}
+

@@ -15,14 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        style={{
-          fontFamily: "monospace", // CLI font
-          color: "green",
-          padding: 0,
-          margin: 0,
-        }}
-      >
+      <body>
         {children}
       </body>
     </html>

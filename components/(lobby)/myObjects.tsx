@@ -124,30 +124,15 @@ export default function MyObjects() {
   }, [models]);
 
   if (loading)
-    return <div style={{ color: "green" }}>Loading models list…</div>;
+    return <div className="text-green-400">Loading models list…</div>;
   if (!models.length)
-    return <div style={{ color: "green" }}>No models for this user</div>;
+    return <div className="text-green-400">No models for this user</div>;
 
   return (
     <>
-      <h1 style={{ position: "fixed", top: "150px", color: "green" }}>
-        My 3D Objects
-      </h1>
+      <h1 className="fixed top-[150px] text-green-400 font-bold left-1/2 transform -translate-x-1/2 text-2xl">My 3D Objects</h1>
       <div
-        style={{
-          position: "fixed",
-          top: "220px",
-          left: "50%",
-          padding: "20px",
-          borderRadius: "15px",
-          backgroundColor: "black",
-          transform: "translateX(-50%)",
-          height: "50vh",
-          overflowY: "scroll",
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)", // maximálně 3 sloupce
-          gap: "20px",
-        }}
+        className="fixed top-[220px] left-1/2 p-5 rounded-2xl bg-black bg-opacity-60 transform -translate-x-1/2 h-[50vh] overflow-y-scroll grid grid-cols-3 gap-5 glass-morph"
       >
         {models.map((model) => (
           <div
@@ -160,16 +145,9 @@ export default function MyObjects() {
                 `/lobby/objectViewPage?key=${encodeURIComponent(model.key)}`
               )
             }
-            style={{
-              width: "300px", // fixní šířka
-              height: "300px",
-              borderRadius: "15px",
-              overflow: "hidden",
-              backgroundColor: "#222",
-              cursor: "pointer",
-              position: "relative",
-            }}
+            className="w-[300px] h-[300px] rounded-2xl overflow-hidden bg-gray-800 cursor-pointer relative shadow-md hover:scale-105 transition-transform"
           >
+          
             {loadingModels[model.key] && (
               <div
                 style={{

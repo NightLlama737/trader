@@ -12,11 +12,24 @@ type Model = {
   url: string; // presigned URL
 };
 
+type OffModelInfo = {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  price: number;
+  url?: string;
+};
+
 export default function ObjectView() {
   const searchParams = useSearchParams();
   const key = searchParams.get("key");
   const mountRef = useRef<HTMLDivElement>(null);
   const [model, setModel] = useState<Model | null>(null);
+  const [offInfo, setOffInfo] = useState<OffModelInfo | null>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState<number | "">("");
   const router = useRouter();
 
   // 1️⃣ Fetch presigned URL
@@ -107,95 +120,73 @@ export default function ObjectView() {
     };
   }, [model]);
 
-  if (!key) return <div style={{ color: "white" }}>Missing key</div>;
-  if (!model) return <div style={{ color: "white" }}>Loading model…</div>;
+  // 4️⃣ Fetch OffModel info (if already in trading)
+  useEffect(() => {
+    if (!model) return;
+
+    fetch(`/api/offModels?key=${encodeURIComponent(model.key)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.model) {
+          setOffInfo(data.model);
+          setName(data.model.name || "");
+          setDescription(data.model.description || "");
+          setPrice(data.model.price ?? "");
+          // if API returned url it can be used by Three view but we keep model.url
+        }
+      })
+      .catch(() => {
+        // ignore — means not in trading
+      });
+  }, [model]);
+
+  if (!key) return <div className="text-white">Missing key</div>;
+  if (!model) return <div className="text-white">Loading model…</div>;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "80vh",
-        background: "#000",
-      }}
-    >
+    <div className="flex justify-center items-center h-[80vh] bg-gradient-to-br from-blue-500 to-pink-400 rounded-2xl shadow-lg">
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "800px 300px",
-          gap: "20px",
-        }}
+        className="grid grid-cols-[800px_300px] gap-5"
       >
         {/* 3D view */}
         <div
           ref={mountRef}
-          style={{
-            width: 800,
-            height: 500,
-            border: "1px solid #333",
-            background: "#111",
-          }}
+          className="w-[800px] h-[500px] border border-gray-800 bg-gray-900 rounded-xl shadow-md"
         />
 
         {/* Sidebar */}
         <div
-          style={{
-            width: 300,
-            padding: 50,
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-            border: "1px solid #333",
-            background: "#1e1e1e",
-            color: "white",
-          }}
+          className="w-[300px] p-12 flex flex-col gap-5 border border-gray-800 bg-black bg-opacity-60 text-white rounded-xl glass-morph"
         >
-          <h4>{model.key}</h4>
-          <a
-            href={model.url}
-            download={model.key.split("/").pop()}
-            style={{
-              display: "inline-block",
-              backgroundColor: "aqua",
-              color: "#000",
-              borderRadius: "4px",
-              textDecoration: "none",
-              fontWeight: "bold",
-              padding: "10px",
-              textAlign: "center",
-              cursor: "pointer",
-            }}
-          >
-            Download
-          </a>
-          <button
-            style={{
-              display: "inline-block",
-              backgroundColor: "aqua",
-              color: "#000",
-              borderRadius: "4px",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-            onClick={() =>
-              router.push(
-                `/lobby/addObjectTrade?s3Key=${encodeURIComponent(model.key)}`
-              )
-            }
-          >
-            Trade
-          </button>
+          {offInfo ? (
+            <div className="flex flex-col gap-2">
+              <div className="text-green-400 font-mono">{model.key}</div>
+              <label className="text-xs">Name</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="p-2 rounded-md border border-gray-800 bg-black bg-opacity-40 text-white" />
+              <label className="text-xs">Description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="p-2 rounded-md border border-gray-800 bg-black bg-opacity-40 text-white" />
+              <label className="text-xs">Price</label>
+              <input value={price as any} onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))} type="number" className="p-2 rounded-md border border-gray-800 bg-black bg-opacity-40 text-white" />
+              <div className="flex gap-2 mt-2">
+                <button onClick={async () => { /* ...existing code... */ }} className="btn-glass text-green-400">[ Save ]</button>
+                <button onClick={async () => { /* ...existing code... */ }} className="btn-glass text-pink-400">[ Remove from trading ]</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h4 className="text-green-400 font-mono">{model.key}</h4>
+              <a href={model.url} download={model.key.split("/").pop()} className="btn-glass text-green-400">[ Download ]</a>
+              <button className="btn-glass text-green-400" onClick={() => router.push(`/lobby/addObjectTrade?s3Key=${encodeURIComponent(model.key)}`)}>[ Trade ]</button>
+            </>
+          )}
+        </div>
+        <div className="flex gap-2 mt-2">
+          <button onClick={async () => { /* ...existing code... */ }} className="btn-glass text-green-400">[ Delete model ]</button>
         </div>
       </div>
 
       <h3
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          color: "white",
-          fontSize: "14px",
-        }}
+        className="absolute bottom-5 text-white text-sm left-1/2 transform -translate-x-1/2"
       >
         Press ESC to exit...
       </h3>

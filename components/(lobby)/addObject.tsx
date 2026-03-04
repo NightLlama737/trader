@@ -48,45 +48,21 @@ export default function AddObject() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: "600px",
-        margin: "20px auto",
-        padding: "20px",
-        border: "none",
-        borderRadius: "5px",
-        backgroundColor: "#black",
-        color: "green",
-        display: "flex",
-        flexDirection: "column",
-        gap: "15px",
-      }}
-    >
-      <h2 style={{ textAlign: "center" }}>Add New Model</h2>
+    <div className="max-w-[600px] mx-auto my-5 p-5 rounded-xl bg-black bg-opacity-60 text-green-400 flex flex-col gap-4 glass-morph">
+      <h2 className="text-center text-xl font-bold">Add New Model</h2>
 
       <input
         type="file"
         accept=".glb,.gltf,.obj,.fbx"
         ref={fileInputRef}
         onChange={handleFileChange}
-        style={{ display: "none" }}
+        className="hidden"
       />
 
       <button
         type="button"
         onClick={handleFileClick}
-        style={{
-          padding: "10px",
-          borderRadius: "5px",
-          border: "none",
-          backgroundColor: "black",
-          color: "green",
-          fontFamily: "monospace", // CLI font
-          cursor: "pointer", // ukazatel
-          transition: "background-color 0.3s", // plynulá změna barvy
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
+        className="btn-glass text-green-400"
       >
         {file ? `[ Selected: ${file.name} ]` : "[ Browse File ]"}
       </button>
@@ -94,14 +70,7 @@ export default function AddObject() {
       <button
         onClick={addObject}
         disabled={!file || uploading}
-        style={{
-          padding: "10px",
-          borderRadius: "5px",
-          border: "none",
-          backgroundColor: "black",
-          color: uploading ? "lightgreen" : "green",
-          cursor: !file || uploading ? "not-allowed" : "pointer",
-        }}
+        className="btn-glass text-green-400"
       >
         {uploading ? "[ Uploading... ]" : "[ Upload ]"}
       </button>
