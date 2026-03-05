@@ -58,18 +58,7 @@ export async function GET(req: NextRequest) {
       }
 
       // 1) delete object from S3
-      try {
-        const delCmd = new DeleteObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET!,
-          Key: key,
-        });
-        await s3.send(delCmd);
-      } catch (s3err) {
-        console.error("S3 delete failed:", s3err);
-        return NextResponse.json({ error: "Failed to delete object from S3" }, { status: 500 });
-      }
-
-      // 2) delete DB record
+     
       const deleted = await prisma.offModel.delete({ where: { key } });
 
       return NextResponse.json({ ok: true, deleted });

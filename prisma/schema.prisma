@@ -26,15 +26,24 @@ model Model {
   offering_models OffModel[]
 }
 
+model Category {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  offModels OffModel[]
+}
+
 model OffModel {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String
   price       Float
   modelId     String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   userId      String
-  key         String   @unique
-  model       Model?   @relation(fields: [modelId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
+  key         String    @unique
+  categoryId  String?
+  model       Model?    @relation(fields: [modelId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  category    Category? @relation(fields: [categoryId], references: [id])
 }

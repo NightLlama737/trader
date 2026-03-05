@@ -6,7 +6,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useRouter } from "next/navigation";
 
 type Model = {
-  key: string; // S3 key
+  key: string;
   id: string;
   createdAt: string;
   userId: string;
@@ -16,41 +16,30 @@ type Model = {
 export default function MyObjects() {
   const [models, setModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
   const containerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const router = useRouter();
 
-  // 1️⃣ Fetch modelů z backendu
   useEffect(() => {
     async function fetchModels() {
       try {
         const res = await fetch("/api/getMyModels");
         const data = await res.json();
         setModels(data.models || []);
-
         const initialLoading: Record<string, boolean> = {};
-        (data.models || []).forEach((m: Model) => {
-          initialLoading[m.key] = true;
-        });
+        (data.models || []).forEach((m: Model) => { initialLoading[m.key] = true; });
         setLoadingModels(initialLoading);
-
-        console.log("Fetched models:", data.models);
       } catch (err) {
         console.error("Failed to fetch models:", err);
       } finally {
         setLoading(false);
       }
     }
-
     fetchModels();
   }, []);
 
-  // 2️⃣ Three.js render přes presigned URL
   useEffect(() => {
     if (!models.length) return;
-
     const loader = new GLTFLoader();
     const renderers: THREE.WebGLRenderer[] = [];
 
@@ -59,55 +48,51 @@ export default function MyObjects() {
       if (!container) return;
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color("black");
+      scene.background = new THREE.Color("#111");
 
-      const width = container.clientWidth;
-      const height = container.clientHeight;
+      const width = container.clientWidth, height = container.clientHeight;
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
       camera.position.z = 5;
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(width, height);
-
-      // Přidáme renderer jen pokud ještě není v DOM
-      if (!container.contains(renderer.domElement)) {
-        container.appendChild(renderer.domElement);
-      }
+      if (!container.contains(renderer.domElement)) container.appendChild(renderer.domElement);
       renderers.push(renderer);
 
-      // světla
       scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-      const light = new THREE.DirectionalLight(0xffffff, 1);
+      const light = new THREE.DirectionalLight(0xffffff, 10);
       light.position.set(5, 5, 5);
       scene.add(light);
 
-      // 🔹 Fetch presigned URL a load GLTF
       fetch(`/api/getSignedUrl?key=${encodeURIComponent(model.key)}`)
         .then((res) => res.json())
         .then(({ url }) => {
-          loader.load(
-            url,
-            (gltf) => {
-              const obj = gltf.scene;
-              scene.add(obj);
+          loader.load(url, (gltf) => {
+           const obj = gltf.scene;
+scene.add(obj);
+const box = new THREE.Box3().setFromObject(obj);
+const center = box.getCenter(new THREE.Vector3());
+const size = box.getSize(new THREE.Vector3());
 
-              const box = new THREE.Box3().setFromObject(obj);
-              const center = box.getCenter(new THREE.Vector3());
-              obj.position.sub(center);
+// Vystředění objektu
+obj.position.sub(center);
+obj.rotation.y = Math.PI * 1.5;
 
-              obj.rotation.y = Math.PI * 1.5;
-              obj.scale.set(1, 1, 1);
+// Kamera se přizpůsobí velikosti objektu
+const maxDim = Math.max(size.x, size.y, size.z);
+const fov = camera.fov * (Math.PI / 180);
+const cameraZ = Math.abs(maxDim / Math.sin(fov / 2)) * 0.8;
+camera.position.z = cameraZ;
+camera.near = cameraZ / 100;
+camera.far = cameraZ * 100;
+camera.updateProjectionMatrix();
 
-              renderer.render(scene, camera);
-
-              setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
-            },
-            undefined,
-            (err) => {
-              console.error("GLTF load error:", err);
-              setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
-            }
-          );
+renderer.render(scene, camera);
+            setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
+          }, undefined, (err) => {
+            console.error("GLTF load error:", err);
+            setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
+          });
         })
         .catch((err) => {
           console.error(err);
@@ -115,52 +100,73 @@ export default function MyObjects() {
         });
     });
 
-    // Cleanup rendererů
-    return () => {
-      renderers.forEach((renderer) => {
-        renderer.dispose();
-      });
-    };
+    return () => { renderers.forEach((r) => r.dispose()); };
   }, [models]);
 
-  if (loading)
-    return <div className="text-green-400">Loading models list…</div>;
-  if (!models.length)
-    return <div className="text-green-400">No models for this user</div>;
+  if (loading) return <div style={{ color: "#fff", fontFamily: "monospace" }}>Loading models list…</div>;
+  if (!models.length) return <div style={{ color: "#fff", fontFamily: "monospace" }}>No models for this user</div>;
 
   return (
     <>
-      <h1 className="fixed top-[150px] text-green-400 font-bold left-1/2 transform -translate-x-1/2 text-2xl">My 3D Objects</h1>
+      <h1
+        style={{
+          position: "fixed",
+          top: "150px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          color: "#fff",
+          fontFamily: "monospace",
+          fontWeight: "bold",
+          fontSize: "1.5rem",
+        }}
+      >
+        My 3D Objects
+      </h1>
       <div
-        className="fixed top-[220px] left-1/2 p-5 rounded-2xl bg-black bg-opacity-60 transform -translate-x-1/2 h-[50vh] overflow-y-scroll grid grid-cols-3 gap-5 glass-morph"
+        style={{
+          position: "fixed",
+          top: "220px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          padding: "20px",
+          borderRadius: "15px",
+          height: "50vh",
+          overflowY: "scroll",
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "20px",
+        }}
       >
         {models.map((model) => (
           <div
             key={model.key}
-            ref={(el) => {
-              if (el) containerRefs.current.set(model.key, el);
+            ref={(el) => { if (el) containerRefs.current.set(model.key, el); }}
+            onClick={() => router.push(`/lobby/objectViewPage?key=${encodeURIComponent(model.key)}`)}
+            style={{
+              width: "300px",
+              height: "300px",
+              borderRadius: "15px",
+              overflow: "hidden",
+              backgroundColor: "#222",
+              cursor: "pointer",
+              position: "relative",
+              transition: "transform 0.2s",
             }}
-            onClick={() =>
-              router.push(
-                `/lobby/objectViewPage?key=${encodeURIComponent(model.key)}`
-              )
-            }
-            className="w-[300px] h-[300px] rounded-2xl overflow-hidden bg-gray-800 cursor-pointer relative shadow-md hover:scale-105 transition-transform"
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-          
             {loadingModels[model.key] && (
               <div
                 style={{
                   position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
+                  top: 0, left: 0,
+                  width: "100%", height: "100%",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                  color: "green",
+                  color: "#fff",
                   backgroundColor: "rgba(0,0,0,0.5)",
+                  fontFamily: "monospace",
                   zIndex: 1,
                 }}
               >

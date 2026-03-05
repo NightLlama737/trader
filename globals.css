@@ -1,123 +1,136 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ============================================================
+   GLOBAL DARK THEME
+   font: monospace  |  bg: #000  |  text: #fff  |  panels: #1a1a1a / #222
 
-* {
-  margin: 0;
-  padding: 0;
+   DŮLEŽITÉ: border: none NESMÍ být na * !important
+   — first_page.tsx používá divy s inline border: "2px solid white"
+     pro kreslení kruhů a šipek, ty by zmizely.
+   Reset borderů je jen na formulářových / UI elementech.
+   ============================================================ */
+
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
-body {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 25%, #3b82f6 50%, #ec4899 75%, #be185d 100%);
-  background-attachment: fixed;
-  min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #ffffff;
+/* Border + outline reset POUZE na form/UI prvcích, ne na všech divech */
+input, textarea, select, button, header, nav, footer {
+  border: none;
+  outline: none;
+}
+  
+input:focus, textarea:focus, select:focus, button:focus {
+  outline: none;
 }
 
-/* Glass morphism effect */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 1rem;
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Smooth button transitions */
+/* ── Typography ─────────────────────────────────────────── */
+h1, h3, h4, h5, h6, p, label, span, a, li, td, th {
+    font-family: Arial, Helvetica, sans-serif;
+  color: #fff;
+}
+
+a {
+  text-decoration: none;
+  color: #fff;
+}
+
+/* ── Inputs / Textareas ─────────────────────────────────── */
+input, textarea, select {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #111;
+  color: #fff;
+  caret-color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #555;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
 button {
-  border-radius: 0.75rem;
-  transition: all 0.3s ease-in-out;
+  background: #1a1a1a;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.2s, color 0.2s;
 }
 
 button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(236, 72, 153, 0.4);
+  background: #2a2a2a;
+  color: lightgray;
 }
 
-/* Input and form elements */
-input, textarea, select {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 0.75rem;
-  border: 1px solid rgba(236, 72, 153, 0.2);
-  transition: all 0.3s ease-in-out;
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: rgba(236, 72, 153, 0.8);
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(236, 72, 153, 0.5);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(236, 72, 153, 0.8);
-}
-
-/* Container with gradient background */
-.gradient-bg {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 25%, #3b82f6 50%, #ec4899 75%, #be185d 100%);
-}
-
-/* Media elements z-index */
-.media-base {
-  z-index: 1;
-}
-
-.media-hidden {
-  display: none;
-}
-
-/* Button styles */
+/* ── Glass / panel helper ───────────────────────────────── */
 .btn-glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 192, 203, 0.6));
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(236, 72, 153, 0.3);
-  padding: 1rem 2rem;
-  border-radius: 9999px;
-  z-index: 10;
-  transition: all 0.3s ease-in-out;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #1a1a1a;
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 5px;
+  margin-left: 4%;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
 }
 
 .btn-glass:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 40px rgba(236, 72, 153, 0.5);
+  background: #2a2a2a;
 }
 
-.btn-hidden {
-  opacity: 0;
-  pointer-events: none;
+/* ── glass-morph panels ─────────────────────────────────── */
+.glass-morph {
+  background: #1a1a1a !important;
+  backdrop-filter: none;
 }
 
-/* Fade overlay */
-.fade-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 9999;
-  transition: all 0.2s ease-in-out;
+/* ── Header (fixed top bar) ─────────────────────────────── */
+header {
+  background: #111 !important;
 }
 
+/* ── Scrollbar (subtle) ─────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* ── Tailwind overrides ─────────────────────────────────── */
+.bg-black          { background-color: #000 !important; }
+.bg-gray-800       { background-color: #1a1a1a !important; }
+.bg-gray-900       { background-color: #111 !important; }
+.text-green-400    { color: #fff !important; }
+.text-pink-400     { color: #ccc !important; }
+.text-white        { color: #fff !important; }
+
+/* Tailwind border utilities — reset jen třídy, ne inline styly */
+.border            { border: none !important; }
+.border-gray-800   { border: none !important; }
+
+/* gradient bg on objectView → plain dark */
+.bg-gradient-to-br { background: #000 !important; }
+
+/* ── Loading overlay ────────────────────────────────────── */
+.loading-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+.header_div {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  width: 10000px;
+}

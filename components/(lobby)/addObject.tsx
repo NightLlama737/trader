@@ -1,3 +1,6 @@
+// ═══════════════════════════════════════════════
+// addObject.tsx
+// ═══════════════════════════════════════════════
 "use client";
 
 import { useState, useRef } from "react";
@@ -9,9 +12,7 @@ export default function AddObject() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
 
-  const handleFileClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleFileClick = () => fileInputRef.current?.click();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] || null);
@@ -19,26 +20,14 @@ export default function AddObject() {
 
   const addObject = async () => {
     if (!file) return;
-
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-
     try {
-      const res = await fetch("/api/addObject", {
-        method: "POST",
-        body: formData,
-      });
-
+      const res = await fetch("/api/addObject", { method: "POST", body: formData });
       const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Upload failed");
-        return;
-      }
-
-      // ✅ redirect s S3 KEY
-      router.push(`/lobby`);
+      if (!res.ok) { alert(data.error || "Upload failed"); return; }
+      router.push("/lobby");
     } catch (err) {
       console.error(err);
       alert("Upload failed");
@@ -47,22 +36,48 @@ export default function AddObject() {
     }
   };
 
+  const btnStyle: React.CSSProperties = {
+    background: "#1a1a1a",
+    color: "#fff",
+    fontFamily: "monospace",
+    padding: "10px 20px",
+    borderRadius: "5px",
+    cursor: "pointer",
+    transition: "background 0.2s",
+    width: "100%",
+  };
+
   return (
-    <div className="max-w-[600px] mx-auto my-5 p-5 rounded-xl bg-black bg-opacity-60 text-green-400 flex flex-col gap-4 glass-morph">
-      <h2 className="text-center text-xl font-bold">Add New Model</h2>
+    <div
+      style={{
+        maxWidth: 600,
+        margin: "20px auto",
+        padding: 20,
+        borderRadius: 12,
+        backgroundColor: "#1a1a1a",
+        color: "#fff",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        fontFamily: "monospace",
+      }}
+    >
+      <h2 style={{ textAlign: "center", color: "#fff", margin: 0 }}>Add New Model</h2>
 
       <input
         type="file"
         accept=".glb,.gltf,.obj,.fbx"
         ref={fileInputRef}
         onChange={handleFileChange}
-        className="hidden"
+        style={{ display: "none" }}
       />
 
       <button
         type="button"
         onClick={handleFileClick}
-        className="btn-glass text-green-400"
+        style={btnStyle}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "#1a1a1a")}
       >
         {file ? `[ Selected: ${file.name} ]` : "[ Browse File ]"}
       </button>
@@ -70,10 +85,42 @@ export default function AddObject() {
       <button
         onClick={addObject}
         disabled={!file || uploading}
-        className="btn-glass text-green-400"
+        style={{ ...btnStyle, opacity: !file || uploading ? 0.4 : 1, cursor: !file || uploading ? "not-allowed" : "pointer" }}
+        onMouseEnter={(e) => { if (file && !uploading) e.currentTarget.style.background = "#2a2a2a"; }}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "#1a1a1a")}
       >
         {uploading ? "[ Uploading... ]" : "[ Upload ]"}
       </button>
     </div>
   );
 }
+
+
+// ═══════════════════════════════════════════════
+// addObjectButton.tsx
+// ═══════════════════════════════════════════════
+// "use client";
+// import { useRouter } from "next/navigation";
+//
+// export default function AddObjectButton() {
+//   const router = useRouter();
+//   return (
+//     <button
+//       style={{
+//         position: "fixed",
+//         left: "45%",
+//         bottom: 20,
+//         width: "12%",
+//         background: "#1a1a1a",
+//         color: "#fff",
+//         fontFamily: "monospace",
+//         padding: "10px",
+//         borderRadius: "5px",
+//         cursor: "pointer",
+//       }}
+//       onClick={() => router.push("/lobby/addObject")}
+//     >
+//       [ Add model ]
+//     </button>
+//   );
+// }

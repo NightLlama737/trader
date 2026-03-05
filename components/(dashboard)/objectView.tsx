@@ -5,7 +5,6 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useRouter, useSearchParams } from "next/navigation";
-import { js } from "three/tsl";
 
 type OffModel = {
   id: string;
@@ -22,33 +21,24 @@ export default function ObjectView() {
   const [model, setModel] = useState<OffModel | null>(null);
   const router = useRouter();
 
-  // 1️⃣ Fetch OffModel info
   useEffect(() => {
     if (!key) return;
-
     fetch(`/api/offModels?key=${encodeURIComponent(key)}`)
       .then((res) => res.json())
-
       .then((data) => setModel(data.model))
       .catch(console.error);
   }, [key]);
 
-  // 2️⃣ ESC → back
   useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") router.push("/dashboard");
-    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") router.push("/dashboard"); };
     window.addEventListener("keydown", onEsc);
     return () => window.removeEventListener("keydown", onEsc);
   }, [router]);
 
-  // 3️⃣ Three.js viewer
   useEffect(() => {
     if (!mountRef.current || !model || !key) return;
 
-    const width = 800;
-    const height = 500;
-
+    const width = 800, height = 500;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
 
@@ -67,47 +57,32 @@ export default function ObjectView() {
     scene.add(dir);
 
     const loader = new GLTFLoader();
-
     fetch(`/api/getSignedUrl?key=${encodeURIComponent(key)}`)
       .then((res) => res.json())
       .then(({ url }) => {
         loader.load(url, (gltf) => {
           const obj = gltf.scene;
           scene.add(obj);
-
           const box = new THREE.Box3().setFromObject(obj);
           const center = box.getCenter(new THREE.Vector3());
           obj.position.sub(center);
-
           const size = box.getSize(new THREE.Vector3());
           const maxDim = Math.max(size.x, size.y, size.z);
           const fov = camera.fov * (Math.PI / 180);
-          camera.position.set(
-            0,
-            maxDim * 0.4,
-            (maxDim / (2 * Math.tan(fov / 2))) * 1.5
-          );
-
+          camera.position.set(0, maxDim * 0.4, (maxDim / (2 * Math.tan(fov / 2))) * 1.5);
           controls.target.set(0, 0, 0);
           controls.update();
         });
       });
 
-    const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
+    const animate = () => { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); };
     animate();
 
-    return () => {
-      renderer.dispose();
-      mountRef.current?.removeChild(renderer.domElement);
-    };
+    return () => { renderer.dispose(); mountRef.current?.removeChild(renderer.domElement); };
   }, [model, key]);
 
-  if (!key) return <div style={{ color: "white" }}>Missing key</div>;
-  if (!model) return <div style={{ color: "white" }}>Loading…</div>;
+  if (!key) return <div style={{ color: "#fff", fontFamily: "monospace" }}>Missing key</div>;
+  if (!model) return <div style={{ color: "#fff", fontFamily: "monospace" }}>Loading…</div>;
 
   return (
     <div
@@ -117,21 +92,38 @@ export default function ObjectView() {
         alignItems: "center",
         height: "80vh",
         background: "#000",
+        fontFamily: "monospace",
       }}
     >
-      <div
-        style={{ display: "grid", gridTemplateColumns: "800px 300px", gap: 20 }}
-      >
-        <div ref={mountRef} style={{ width: 800, height: 500 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "800px 300px", gap: 20 }}>
+        {/* 3D viewer */}
+        <div ref={mountRef} style={{ width: 800, height: 500, borderRadius: "12px", overflow: "hidden" }} />
 
-        <div style={{ padding: 30, background: "#1e1e1e" }}>
-          <h3>{model.name}</h3>
-          <p>{model.description}</p>
-          <strong>{model.price} €</strong>
+        {/* Info panel */}
+        <div
+          style={{
+            padding: 30,
+            background: "#1a1a1a",
+            borderRadius: "12px",
+            color: "#fff",
+            fontFamily: "monospace",
+          }}
+        >
+          <h3 style={{ color: "#fff", margin: "0 0 12px 0" }}>{model.name}</h3>
+          <p style={{ color: "#ccc", margin: "0 0 16px 0" }}>{model.description}</p>
+          <strong style={{ color: "#fff", fontSize: "1.2rem" }}>{model.price} €</strong>
         </div>
       </div>
 
-      <div style={{ position: "absolute", bottom: 20, fontSize: 14 }}>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 20,
+          fontSize: 14,
+          color: "#777",
+          fontFamily: "monospace",
+        }}
+      >
         Press ESC to exit
       </div>
     </div>

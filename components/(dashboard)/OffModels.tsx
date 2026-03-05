@@ -5,49 +5,62 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useRouter } from "next/navigation";
 
+type Category = { id: string; name: string };
+
 type Model = {
-  key: string; // S3 key
+  key: string;
   id: string;
   createdAt: string;
   userId: string;
-  offering_models: any[];
+  name: string;
+  description: string;
+  price: number;
+  category?: Category | null;
+  url: string;
 };
 
 export default function OffModels() {
   const [models, setModels] = useState<Model[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
   const containerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const router = useRouter();
 
-  // 1️⃣ Fetch modelů z backendu
+  // Fetch categories
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []));
+  }, []);
+
+  // Fetch models (with optional category filter)
   useEffect(() => {
     async function fetchModels() {
+      setLoading(true);
       try {
-        const res = await fetch("/api/getOffModels");
+        const url = selectedCategory
+          ? `/api/getOffModels?categoryId=${selectedCategory}`
+          : "/api/getOffModels";
+        const res = await fetch(url);
         const data = await res.json();
-        setModels(data.models || []);
+        const fetched: Model[] = data.models || [];
+        setModels(fetched);
 
         const initialLoading: Record<string, boolean> = {};
-        (data.models || []).forEach((m: Model) => {
-          initialLoading[m.key] = true;
-        });
+        fetched.forEach((m) => { initialLoading[m.key] = true; });
         setLoadingModels(initialLoading);
-
-        console.log("Fetched models:", data.models);
       } catch (err) {
         console.error("Failed to fetch models:", err);
       } finally {
         setLoading(false);
       }
     }
-
     fetchModels();
-  }, []);
+  }, [selectedCategory]);
 
-  // 2️⃣ Three.js render přes presigned URL
+  // Three.js renders
   useEffect(() => {
     if (!models.length) return;
 
@@ -58,30 +71,27 @@ export default function OffModels() {
       const container = containerRefs.current.get(model.key);
       if (!container) return;
 
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color("black");
+      // Clear old canvas
+      container.innerHTML = "";
 
-      const width = container.clientWidth;
-      const height = container.clientHeight;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0a0a);
+
+      const width = container.clientWidth || 260;
+      const height = container.clientHeight || 260;
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
       camera.position.z = 5;
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(width, height);
-
-      // Přidáme renderer jen pokud ještě není v DOM
-      if (!container.contains(renderer.domElement)) {
-        container.appendChild(renderer.domElement);
-      }
+      container.appendChild(renderer.domElement);
       renderers.push(renderer);
 
-      // světla
-      scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
       const light = new THREE.DirectionalLight(0xffffff, 1);
       light.position.set(5, 5, 5);
       scene.add(light);
 
-      // 🔹 Fetch presigned URL a load GLTF
       fetch(`/api/getSignedUrl?key=${encodeURIComponent(model.key)}`)
         .then((res) => res.json())
         .then(({ url }) => {
@@ -94,108 +104,253 @@ export default function OffModels() {
               const box = new THREE.Box3().setFromObject(obj);
               const center = box.getCenter(new THREE.Vector3());
               obj.position.sub(center);
-
               obj.rotation.y = Math.PI * 1.5;
-              obj.scale.set(1, 1, 1);
 
               renderer.render(scene, camera);
-
               setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
             },
             undefined,
-            (err) => {
-              console.error("GLTF load error:", err);
-              setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
-            }
+            () => setLoadingModels((prev) => ({ ...prev, [model.key]: false }))
           );
         })
-        .catch((err) => {
-          console.error(err);
-          setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
-        });
+        .catch(() => setLoadingModels((prev) => ({ ...prev, [model.key]: false })));
     });
 
-    // Cleanup rendererů
     return () => {
-      renderers.forEach((renderer) => {
-        renderer.dispose();
-      });
+      renderers.forEach((r) => r.dispose());
     };
   }, [models]);
 
-  if (loading)
-    return <div style={{ color: "green" }}>Loading models list…</div>;
-  if (!models.length)
-    return <div style={{ color: "green" }}>No models for this user</div>;
-
   return (
-    <>
-      <h1
-        style={{ position: "fixed", left: "48%", top: "150px", color: "green" }}
-      >
-        Trading
-      </h1>
-      <div
+    <div style={{ display: "flex", width: "100vw", minHeight: "100vh", paddingTop: "80px" }}>
+
+      {/* ── Sidebar ── */}
+      <aside
         style={{
           position: "fixed",
-          top: "220px",
-          left: "50%",
-          padding: "20px",
-          borderRadius: "15px",
-          backgroundColor: "black",
-          transform: "translateX(-50%)",
-          height: "50vh",
-          overflowY: "scroll",
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)", // maximálně 3 sloupce
-          gap: "20px",
+          left: 0,
+          top: "80px",
+          width: "200px",
+          height: "calc(100vh - 80px)",
+          backgroundColor: "#050505",
+          borderRight: "1px dashed #1a4a1a",
+          padding: "24px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          overflowY: "auto",
+          zIndex: 10,
         }}
       >
-        {models.map((model) => (
-          <div
-            key={model.key}
-            ref={(el) => {
-              if (el) containerRefs.current.set(model.key, el);
-            }}
+        <span
+          style={{
+            color: "#3a6a3a",
+            fontFamily: "monospace",
+            fontSize: "11px",
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+            marginBottom: "12px",
+          }}
+        >
+          Categories
+        </span>
+
+        <button
+          onClick={() => setSelectedCategory(null)}
+          style={{
+            background: selectedCategory === null ? "rgba(0,255,0,0.08)" : "transparent",
+            border: selectedCategory === null ? "1px solid #2a5a2a" : "1px solid transparent",
+            borderRadius: "6px",
+            color: selectedCategory === null ? "lightgreen" : "green",
+            fontFamily: "monospace",
+            fontSize: "13px",
+            padding: "7px 10px",
+            textAlign: "left",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
+          onMouseLeave={(e) => {
+            if (selectedCategory !== null) e.currentTarget.style.color = "green";
+          }}
+        >
+          All
+        </button>
+
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
             onClick={() =>
-              router.push(
-                `/dashboard/offModelViewPage?key=${encodeURIComponent(
-                  model.key
-                )}`
-              )
+              setSelectedCategory(selectedCategory === cat.id ? null : cat.id)
             }
             style={{
-              width: "300px", // fixní šířka
-              height: "300px",
-              borderRadius: "15px",
-              overflow: "hidden",
-              backgroundColor: "#222",
+              background:
+                selectedCategory === cat.id ? "rgba(0,255,0,0.08)" : "transparent",
+              border:
+                selectedCategory === cat.id
+                  ? "1px solid #2a5a2a"
+                  : "1px solid transparent",
+              borderRadius: "6px",
+              color: selectedCategory === cat.id ? "lightgreen" : "green",
+              fontFamily: "monospace",
+              fontSize: "13px",
+              padding: "7px 10px",
+              textAlign: "left",
               cursor: "pointer",
-              position: "relative",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
+            onMouseLeave={(e) => {
+              if (selectedCategory !== cat.id) e.currentTarget.style.color = "green";
             }}
           >
-            {loadingModels[model.key] && (
+            {cat.name}
+          </button>
+        ))}
+
+        {categories.length === 0 && (
+          <span style={{ color: "#2a4a2a", fontFamily: "monospace", fontSize: "11px", marginTop: "8px" }}>
+            No categories yet
+          </span>
+        )}
+      </aside>
+
+      {/* ── Main content ── */}
+      <main style={{ marginLeft: "200px", flex: 1, padding: "40px 32px" }}>
+        <h1
+          style={{
+            color: "green",
+            fontFamily: "monospace",
+            marginBottom: "28px",
+            fontSize: "22px",
+            letterSpacing: "2px",
+          }}
+        >
+          {selectedCategory
+            ? `[ ${categories.find((c) => c.id === selectedCategory)?.name ?? "…"} ]`
+            : "[ Trading ]"}
+        </h1>
+
+        {loading ? (
+          <div style={{ color: "green", fontFamily: "monospace" }}>Loading…</div>
+        ) : models.length === 0 ? (
+          <div style={{ color: "#2a5a2a", fontFamily: "monospace" }}>No models found</div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "20px",
+            }}
+          >
+            {models.map((model) => (
               <div
+                key={model.key}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/offModelViewPage?key=${encodeURIComponent(model.key)}`
+                  )
+                }
                 style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  backgroundColor: "#0d0d0d",
+                  border: "1px solid #1a3a1a",
+                  cursor: "pointer",
+                  transition: "border-color 0.2s, transform 0.2s",
                   display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  color: "green",
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                  zIndex: 1,
+                  flexDirection: "column",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "#2a6a2a";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "#1a3a1a";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
                 }}
               >
-                Loading…
+                {/* 3D canvas area */}
+                <div
+                  ref={(el) => {
+                    if (el) containerRefs.current.set(model.key, el);
+                  }}
+                  style={{ width: "100%", height: "220px", position: "relative", backgroundColor: "#080808" }}
+                >
+                  {loadingModels[model.key] && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        color: "green",
+                        fontFamily: "monospace",
+                        fontSize: "12px",
+                        backgroundColor: "rgba(0,0,0,0.6)",
+                        zIndex: 1,
+                      }}
+                    >
+                      Loading…
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div style={{ padding: "12px 14px", borderTop: "1px solid #1a3a1a" }}>
+                  <div
+                    style={{
+                      color: "lightgreen",
+                      fontFamily: "monospace",
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      marginBottom: "4px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {model.name}
+                  </div>
+                  <div
+                    style={{
+                      color: "#4a8a4a",
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      marginBottom: "6px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {model.description}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "green", fontFamily: "monospace", fontSize: "13px" }}>
+                      {model.price} €
+                    </span>
+                    {model.category && (
+                      <span
+                        style={{
+                          color: "#2a5a2a",
+                          fontFamily: "monospace",
+                          fontSize: "10px",
+                          border: "1px solid #1a3a1a",
+                          borderRadius: "4px",
+                          padding: "2px 6px",
+                        }}
+                      >
+                        {model.category.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
-    </>
+        )}
+      </main>
+    </div>
   );
 }

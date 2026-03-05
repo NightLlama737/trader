@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Header from "@/components/(dashboard)/header";
 
 export const metadata: Metadata = {
@@ -6,19 +7,30 @@ export const metadata: Metadata = {
   description: "Auth of the traders",
 };
 
-export default function LobbyLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get("user")?.value;
+
+  let nickname: string | undefined;
+  try {
+    if (raw) nickname = JSON.parse(raw).nickname;
+  } catch {}
+
   return (
     <>
       <header
         style={{
           position: "fixed",
-          width: "100%",
-          borderBottom: "2px dashed green",
+          width: "60%",
+          marginTop: "20px",
           display: "flex",
+          left: "20%",
+          right: "20%",
+          borderRadius: "70px",
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
@@ -26,7 +38,7 @@ export default function LobbyLayout({
           backgroundColor: "black",
         }}
       >
-        <Header />
+        <Header nickname={nickname} />
       </header>
 
       <div
@@ -35,8 +47,10 @@ export default function LobbyLayout({
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          background: "black",
+          background: "#000",
           minHeight: "100vh",
+          fontFamily: "monospace",
+          color: "#fff",
         }}
       >
         {children}

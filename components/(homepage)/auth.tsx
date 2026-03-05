@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useTypewriter } from "../(homepage)/useTypeWriter";
 import { Pass } from "three/examples/jsm/Addons.js";
 import { log } from "console";
 
@@ -26,7 +25,6 @@ export default function Auth() {
       ? "User found — login"
       : "User not found — create account";
 
-  const title = useTypewriter(showText ? animatedText : "", 40); // only start typewriter after 5s
 
   const findUser = async () => {
     const response = await fetch(`/api/findUser`, {
@@ -69,25 +67,25 @@ export default function Auth() {
         color: "white",
         display: "flex",
         alignItems: "center",
-        width: "500px",
+        width: "800px",
+        padding: "100px",
         flexDirection: "column",
         gap: "10px",
       }}
     >
-      <h2 style={{ color: "green" }}>{title}</h2>
+      <h2>Enter your email or nickname</h2>
 
       {userExists === null && (
         <>
-          <label style={{ width: "100%", color: "green" }}>
+          <label style={{ width: "100%" }}>
             Email or Nickname:
             <input
               type="text"
               style={{
+                color: "lightgray",
                 outline: "none" /* odstraní standardní ohraničení při focus */,
-                color: "lightgreen",
                 paddingLeft: "10px",
                 border: "none",
-                caretColor: "lightgreen" /* barva kurzoru */,
                 width: "60%",
                 backgroundColor: "black",
               }}
@@ -97,39 +95,37 @@ export default function Auth() {
           </label>
 
           <button
+          
             style={{
               marginTop: "20px",
               height: "40px",
               borderRadius: "5px",
-              color: "green",
               border: "none",
               width: "40%",
+              color: "white",
               backgroundColor: "black",
-              fontFamily: "monospace", // CLI font
               cursor: "pointer", // ukazatel
               transition: "background-color 0.3s", // plynulá změna barvy
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgray")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
             onClick={findUser}
           >
-            <h2>[ Find User ]</h2>
+            <h2>Find User</h2>
           </button>
         </>
       )}
 
       {userExists === true && (
         <>
-          <label style={{ width: "100%", color: "green" }}>
+          <label style={{ width: "100%"}}>
             Password:
             <input
               type="password"
               style={{
                 outline: "none" /* odstraní standardní ohraničení při focus */,
-                color: "lightgreen",
                 paddingLeft: "10px",
                 border: "none",
-                caretColor: "lightgreen" /* barva kurzoru */,
                 width: "70%",
                 backgroundColor: "black",
               }}
@@ -143,35 +139,32 @@ export default function Auth() {
               marginTop: "20px",
               height: "40px",
               borderRadius: "5px",
-              color: "green",
               border: "none",
               width: "40%",
+                            color: "white",
               backgroundColor: "black",
-              fontFamily: "monospace", // CLI font
               cursor: "pointer", // ukazatel
               transition: "background-color 0.3s", // plynulá změna barvy
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgray")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
             onClick={login}
           >
-            <h2>[ Log in ]</h2>
+            <h2>Log in</h2>
           </button>
         </>
       )}
 
       {userExists === false && (
         <>
-          <label style={{ width: "100%", color: "green" }}>
+          <label style={{ width: "100%"}}>
             Email:
             <input
               type="text"
               style={{
                 outline: "none" /* odstraní standardní ohraničení při focus */,
-                color: "lightgreen",
                 paddingLeft: "10px",
                 border: "none",
-                caretColor: "lightgreen" /* barva kurzoru */,
                 width: "70%",
                 backgroundColor: "black",
               }}
@@ -180,16 +173,15 @@ export default function Auth() {
             />
           </label>
 
-          <label style={{ width: "100%", color: "green" }}>
+          <label style={{ width: "100%"}}>
             Nickname:
             <input
               type="text"
               style={{
                 outline: "none" /* odstraní standardní ohraničení při focus */,
-                color: "lightgreen",
+                color: "white",
                 paddingLeft: "10px",
                 border: "none",
-                caretColor: "lightgreen" /* barva kurzoru */,
                 width: "70%",
                 backgroundColor: "black",
               }}
@@ -198,16 +190,14 @@ export default function Auth() {
             />
           </label>
 
-          <label style={{ width: "100%", color: "green" }}>
+          <label style={{ width: "100%"}}>
             Password:
             <input
               type="password"
               style={{
                 outline: "none" /* odstraní standardní ohraničení při focus */,
-                color: "lightgreen",
                 paddingLeft: "10px",
                 border: "none",
-                caretColor: "lightgreen" /* barva kurzoru */,
                 width: "70%",
                 backgroundColor: "black",
               }}
@@ -221,19 +211,18 @@ export default function Auth() {
               marginTop: "20px",
               height: "40px",
               borderRadius: "5px",
-              color: "green",
+              color: "white",
               border: "none",
               width: "40%",
               backgroundColor: "black",
-              fontFamily: "monospace", // CLI font
               cursor: "pointer", // ukazatel
               transition: "background-color 0.3s", // plynulá změna barvy
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgray")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
             onClick={signup}
           >
-            <h2>[ Sign Up ]</h2>
+            <h2>Sign Up</h2>
           </button>
         </>
       )}

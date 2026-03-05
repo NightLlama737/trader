@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+
 export const metadata: Metadata = {
   title: "Authentication page",
   description: "Auth of the traders",
@@ -17,8 +18,10 @@ export default function AuthLayout({
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        background: "black",
+        background: "#000",
         minHeight: "100vh",
+        fontFamily: "monospace",
+        color: "#fff",
       }}
     >
       {children}
