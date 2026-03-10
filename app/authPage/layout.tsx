@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
 
-
 export const metadata: Metadata = {
-  title: "Authentication page",
+  title: "Authentication",
   description: "Auth of the traders",
 };
 
-export default function AuthLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function AuthLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div
       style={{
@@ -18,10 +13,8 @@ export default function AuthLayout({
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        background: "#000",
+        background: "#0a0a0a",
         minHeight: "100vh",
-        fontFamily: "monospace",
-        color: "#fff",
       }}
     >
       {children}

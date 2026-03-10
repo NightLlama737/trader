@@ -1,20 +1,20 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Pass } from "three/examples/jsm/Addons.js";
-import { log } from "console";
+import { useTypewriter } from "./useTypeWriter";
 
 export default function Auth() {
   const [emailOrNick, setEmailOrNick] = useState("");
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userExists, setUserExists] = useState<boolean | null>(null); // null = not checked yet, true = user found, false = user NOT found
-  const [showText, setShowText] = useState(false); // new state for delayed text
+  const [userExists, setUserExists] = useState<boolean | null>(null);
+  const [showText, setShowText] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowText(true), 5000); // show text after 5 seconds
+    const timer = setTimeout(() => setShowText(true), 5000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -22,207 +22,144 @@ export default function Auth() {
     userExists === null
       ? "Enter your email or nickname"
       : userExists === true
-      ? "User found — login"
-      : "User not found — create account";
+      ? "Welcome back"
+      : "Create your account";
 
+  const title = useTypewriter(showText ? animatedText : "", 42);
 
   const findUser = async () => {
-    const response = await fetch(`/api/findUser`, {
+    const res = await fetch("/api/findUser", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emailOrNick }),
     });
-
-    const data = await response.json();
-    const exists = data.user ? true : false;
-
-    setUserExists(exists);
+    const data = await res.json();
+    setUserExists(data.user ? true : false);
   };
 
   const login = async () => {
-    const response = await fetch(`/api/logIn`, {
+    const res = await fetch("/api/logIn", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emailOrNick, password }),
     });
-
-    if (response.ok) {
-      router.push("/lobby");
-    }
+    if (res.ok) router.push("/lobby");
   };
 
   const signup = async () => {
-    const response = await fetch(`/api/signUp`, {
+    const res = await fetch("/api/signUp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, nickname, password }),
     });
+    if (res.ok) router.push("/lobby");
+  };
 
-    if (response.ok) router.push("/lobby");
+  const S: React.CSSProperties = {
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: "0.68rem",
+    letterSpacing: "0.14em",
+    textTransform: "uppercase",
+    color: "rgba(245,240,232,0.35)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    width: "100%",
+  };
+
+  const I: React.CSSProperties = {
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: "1rem",
+    fontWeight: 300,
+    background: "transparent",
+    color: "#f5f0e8",
+    border: "none",
+    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    padding: "8px 0",
+    outline: "none",
+    caretColor: "#f5f0e8",
+    width: "100%",
+    transition: "border-color 0.2s",
   };
 
   return (
-    <div
-      style={{
-        color: "white",
-        display: "flex",
-        alignItems: "center",
-        width: "800px",
-        padding: "100px",
-        flexDirection: "column",
-        gap: "10px",
-      }}
-    >
-      <h2>Enter your email or nickname</h2>
+    <div style={{ display: "flex", alignItems: "center", width: "360px", flexDirection: "column", gap: 24 }}>
+
+      <h2 style={{
+        fontFamily: "'Playfair Display', Georgia, serif",
+        fontWeight: 400,
+        fontSize: "1.5rem",
+        color: "#f5f0e8",
+        letterSpacing: "0.03em",
+        minHeight: "2.2rem",
+        textAlign: "center",
+      }}>
+        {title}<span style={{ opacity: 0.35 }}>_</span>
+      </h2>
 
       {userExists === null && (
         <>
-          <label style={{ width: "100%" }}>
-            Email or Nickname:
+          <label style={S}>
+            Email or Nickname
             <input
+              style={I}
               type="text"
-              style={{
-                color: "lightgray",
-                outline: "none" /* odstraní standardní ohraničení při focus */,
-                paddingLeft: "10px",
-                border: "none",
-                width: "60%",
-                backgroundColor: "black",
-              }}
               value={emailOrNick}
               onChange={(e) => setEmailOrNick(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && findUser()}
+              onFocus={(e) => e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)"}
+              onBlur={(e) => e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)"}
             />
           </label>
-
-          <button
-          
-            style={{
-              marginTop: "20px",
-              height: "40px",
-              borderRadius: "5px",
-              border: "none",
-              width: "40%",
-              color: "white",
-              backgroundColor: "black",
-              cursor: "pointer", // ukazatel
-              transition: "background-color 0.3s", // plynulá změna barvy
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgray")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-            onClick={findUser}
-          >
-            <h2>Find User</h2>
+          <button className="btn-primary" style={{ width: "100%", marginTop: 8 }} onClick={findUser}>
+            Continue
           </button>
         </>
       )}
 
       {userExists === true && (
         <>
-          <label style={{ width: "100%"}}>
-            Password:
+          <label style={S}>
+            Password
             <input
+              style={I}
               type="password"
-              style={{
-                outline: "none" /* odstraní standardní ohraničení při focus */,
-                paddingLeft: "10px",
-                border: "none",
-                width: "70%",
-                backgroundColor: "black",
-              }}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && login()}
+              onFocus={(e) => e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)"}
+              onBlur={(e) => e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)"}
             />
           </label>
-
-          <button
-            style={{
-              marginTop: "20px",
-              height: "40px",
-              borderRadius: "5px",
-              border: "none",
-              width: "40%",
-                            color: "white",
-              backgroundColor: "black",
-              cursor: "pointer", // ukazatel
-              transition: "background-color 0.3s", // plynulá změna barvy
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgray")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-            onClick={login}
-          >
-            <h2>Log in</h2>
+          <button className="btn-primary" style={{ width: "100%", marginTop: 8 }} onClick={login}>
+            Sign In
           </button>
         </>
       )}
 
       {userExists === false && (
         <>
-          <label style={{ width: "100%"}}>
-            Email:
-            <input
-              type="text"
-              style={{
-                outline: "none" /* odstraní standardní ohraničení při focus */,
-                paddingLeft: "10px",
-                border: "none",
-                width: "70%",
-                backgroundColor: "black",
-              }}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <label style={S}>
+            Email
+            <input style={I} type="text" value={email} onChange={(e) => setEmail(e.target.value)}
+              onFocus={(e) => e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)"}
+              onBlur={(e) => e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)"} />
           </label>
-
-          <label style={{ width: "100%"}}>
-            Nickname:
-            <input
-              type="text"
-              style={{
-                outline: "none" /* odstraní standardní ohraničení při focus */,
-                color: "white",
-                paddingLeft: "10px",
-                border: "none",
-                width: "70%",
-                backgroundColor: "black",
-              }}
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-            />
+          <label style={S}>
+            Nickname
+            <input style={I} type="text" value={nickname} onChange={(e) => setNickname(e.target.value)}
+              onFocus={(e) => e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)"}
+              onBlur={(e) => e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)"} />
           </label>
-
-          <label style={{ width: "100%"}}>
-            Password:
-            <input
-              type="password"
-              style={{
-                outline: "none" /* odstraní standardní ohraničení při focus */,
-                paddingLeft: "10px",
-                border: "none",
-                width: "70%",
-                backgroundColor: "black",
-              }}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          <label style={S}>
+            Password
+            <input style={I} type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && signup()}
+              onFocus={(e) => e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)"}
+              onBlur={(e) => e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)"} />
           </label>
-
-          <button
-            style={{
-              marginTop: "20px",
-              height: "40px",
-              borderRadius: "5px",
-              color: "white",
-              border: "none",
-              width: "40%",
-              backgroundColor: "black",
-              cursor: "pointer", // ukazatel
-              transition: "background-color 0.3s", // plynulá změna barvy
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "lightgray")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-            onClick={signup}
-          >
-            <h2>Sign Up</h2>
+          <button className="btn-primary" style={{ width: "100%", marginTop: 8 }} onClick={signup}>
+            Create Account
           </button>
         </>
       )}

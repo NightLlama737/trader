@@ -8,54 +8,59 @@ import { useRouter } from "next/navigation";
 type Model = {
   key: string;
   id: string;
-  createdAt: string;
-  userId: string;
-  offering_models: any[];
+  lastModified?: string;
+  size?: number;
+  isTrading: boolean;
 };
+
+type FilterMode = "all" | "trading" | "not-trading";
 
 export default function MyObjects() {
   const [models, setModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
+  const [filter, setFilter] = useState<FilterMode>("all");
   const containerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const router = useRouter();
 
   useEffect(() => {
-    async function fetchModels() {
-      try {
-        const res = await fetch("/api/getMyModels");
-        const data = await res.json();
-        setModels(data.models || []);
-        const initialLoading: Record<string, boolean> = {};
-        (data.models || []).forEach((m: Model) => { initialLoading[m.key] = true; });
-        setLoadingModels(initialLoading);
-      } catch (err) {
-        console.error("Failed to fetch models:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchModels();
+    fetch("/api/getMyModels")
+      .then((r) => r.json())
+      .then((d) => {
+        setModels(d.models || []);
+        const init: Record<string, boolean> = {};
+        (d.models || []).forEach((m: Model) => { init[m.key] = true; });
+        setLoadingModels(init);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
+  const filtered = models.filter((m) => {
+    if (filter === "trading") return m.isTrading;
+    if (filter === "not-trading") return !m.isTrading;
+    return true;
+  });
+
   useEffect(() => {
-    if (!models.length) return;
+    if (!filtered.length) return;
+
     const loader = new GLTFLoader();
     const renderers: THREE.WebGLRenderer[] = [];
 
-    models.forEach((model) => {
+    filtered.forEach((model) => {
       const container = containerRefs.current.get(model.key);
       if (!container) return;
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color("#111");
-
-      const width = container.clientWidth, height = container.clientHeight;
-      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      scene.background = new THREE.Color(0x111111);
+      const w = container.clientWidth || 260;
+      const h = container.clientHeight || 260;
+      const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
       camera.position.z = 5;
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(width, height);
+      renderer.setSize(w, h);
       if (!container.contains(renderer.domElement)) container.appendChild(renderer.domElement);
       renderers.push(renderer);
 
@@ -65,117 +70,212 @@ export default function MyObjects() {
       scene.add(light);
 
       fetch(`/api/getSignedUrl?key=${encodeURIComponent(model.key)}`)
-        .then((res) => res.json())
+        .then((r) => r.json())
         .then(({ url }) => {
-          loader.load(url, (gltf) => {
-           const obj = gltf.scene;
-scene.add(obj);
-const box = new THREE.Box3().setFromObject(obj);
-const center = box.getCenter(new THREE.Vector3());
-const size = box.getSize(new THREE.Vector3());
-
-// Vystředění objektu
-obj.position.sub(center);
-obj.rotation.y = Math.PI * 1.5;
-
-// Kamera se přizpůsobí velikosti objektu
-const maxDim = Math.max(size.x, size.y, size.z);
-const fov = camera.fov * (Math.PI / 180);
-const cameraZ = Math.abs(maxDim / Math.sin(fov / 2)) * 0.8;
-camera.position.z = cameraZ;
-camera.near = cameraZ / 100;
-camera.far = cameraZ * 100;
-camera.updateProjectionMatrix();
-
-renderer.render(scene, camera);
-            setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
-          }, undefined, (err) => {
-            console.error("GLTF load error:", err);
-            setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
-          });
+          loader.load(
+            url,
+            (gltf) => {
+              const obj = gltf.scene;
+              scene.add(obj);
+              const box = new THREE.Box3().setFromObject(obj);
+              obj.position.sub(box.getCenter(new THREE.Vector3()));
+              obj.rotation.y = Math.PI * 1.5;
+              const size = box.getSize(new THREE.Vector3());
+              const maxDim = Math.max(size.x, size.y, size.z);
+              const fov = camera.fov * (Math.PI / 180);
+              const cameraZ = Math.abs(maxDim / Math.sin(fov / 2)) * 0.8;
+              camera.position.set(0, 0, cameraZ);
+              camera.near = cameraZ / 100;
+              camera.far = cameraZ * 100;
+              camera.updateProjectionMatrix();
+              renderer.render(scene, camera);
+              setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
+            },
+            undefined,
+            () => setLoadingModels((prev) => ({ ...prev, [model.key]: false }))
+          );
         })
-        .catch((err) => {
-          console.error(err);
-          setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
-        });
+        .catch(() => setLoadingModels((prev) => ({ ...prev, [model.key]: false })));
     });
 
     return () => { renderers.forEach((r) => r.dispose()); };
-  }, [models]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [models, filter]);
 
-  if (loading) return <div style={{ color: "#fff", fontFamily: "monospace" }}>Loading models list…</div>;
-  if (!models.length) return <div style={{ color: "#fff", fontFamily: "monospace" }}>No models for this user</div>;
+  const FILTERS: { mode: FilterMode; label: string; icon: string }[] = [
+    { mode: "all",         label: "All Objects",    icon: "◈" },
+    { mode: "trading",     label: "In Trading",     icon: "◆" },
+    { mode: "not-trading", label: "Not in Trading", icon: "◇" },
+  ];
+
+  const counts: Record<FilterMode, number> = {
+    all:           models.length,
+    trading:       models.filter((m) => m.isTrading).length,
+    "not-trading": models.filter((m) => !m.isTrading).length,
+  };
+
+  if (loading) return (
+    <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>Loading models…</p>
+  );
 
   return (
-    <>
-      <h1
-        style={{
-          position: "fixed",
-          top: "150px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          color: "#fff",
+    <div style={{ display: "flex", width: "100vw", minHeight: "100vh", paddingTop: 80 }}>
+
+      {/* ── Sidebar ── */}
+      <aside style={{
+        position: "fixed", left: 0, top: 80,
+        width: 210, height: "calc(100vh - 80px)",
+        background: "#0a0a0a",
+        borderRight: "1px solid rgba(255,255,255,0.05)",
+        padding: "32px 16px",
+        display: "flex", flexDirection: "column", gap: 4,
+        overflowY: "auto", zIndex: 10,
+      }}>
+       
+          <h1 style={{
           fontFamily: "monospace",
-          fontWeight: "bold",
-          fontSize: "1.5rem",
-        }}
-      >
-        My 3D Objects
-      </h1>
-      <div
-        style={{
-          position: "fixed",
-          top: "220px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          padding: "20px",
-          borderRadius: "15px",
-          height: "50vh",
-          overflowY: "scroll",
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "20px",
-        }}
-      >
-        {models.map((model) => (
-          <div
-            key={model.key}
-            ref={(el) => { if (el) containerRefs.current.set(model.key, el); }}
-            onClick={() => router.push(`/lobby/objectViewPage?key=${encodeURIComponent(model.key)}`)}
-            style={{
-              width: "300px",
-              height: "300px",
-              borderRadius: "15px",
-              overflow: "hidden",
-              backgroundColor: "#222",
-              cursor: "pointer",
-              position: "relative",
-              transition: "transform 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-          >
-            {loadingModels[model.key] && (
+          fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
+          color: "rgb(212,175,55)", marginBottom: 16,
+        }}>My models</h1>
+        
+
+        {FILTERS.map(({ mode, label, icon }) => {
+          const active = filter === mode;
+          return (
+            <button
+              key={mode}
+              onClick={() => setFilter(mode)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                fontFamily: "monospace", fontSize: "0.88rem",
+                color: active ? "#fff" : "rgba(255,255,255,0.33)",
+                background: active ? "rgba(255,255,255,0.04)" : "transparent",
+                border: `1px solid ${active ? "rgba(255,255,255,0.13)" : "transparent"}`,
+                borderRadius: 2, padding: "7px 10px", textAlign: "left",
+                cursor: "pointer", transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
+              onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "rgba(255,255,255,0.33)"; }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{icon}</span>
+                {label}
+              </span>
+              <span style={{
+                fontSize: "0.7rem",
+                color: active ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.18)",
+                background: "rgba(255,255,255,0.04)",
+                borderRadius: 10, padding: "1px 7px",
+              }}>
+                {counts[mode]}
+              </span>
+            </button>
+          );
+        })}
+
+        <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "14px 0" }} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 2 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 7, height: 7, borderRadius: "50%",
+              background: "rgb(212,175,55)",
+              boxShadow: "0 0 5px rgba(212,175,55,0.5)",
+              flexShrink: 0,
+            }} />
+            <span style={{ color: "rgba(255,255,255,0.25)", fontFamily: "monospace", fontSize: "0.68rem" }}>
+              listed for trade
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 7, height: 7, borderRadius: "50%",
+              background: "rgba(255,255,255,0.18)",
+              flexShrink: 0,
+            }} />
+            <span style={{ color: "rgba(255,255,255,0.25)", fontFamily: "monospace", fontSize: "0.68rem" }}>
+              not listed
+            </span>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main grid ── */}
+      <main style={{ marginLeft: 210, flex: 1, padding: "44px 40px" }}>
+        <h1 style={{
+          fontFamily: "monospace",
+          fontWeight: 400, fontSize: "1.1rem", color: "#fff",
+          marginBottom: 32, letterSpacing: "0.06em",
+        }}>
+          {filter === "all" ? "All Objects" : filter === "trading" ? "In Trading" : "Not in Trading"}
+          <span style={{ color: "rgba(255,255,255,0.22)", marginLeft: 10, fontSize: "0.85rem" }}>
+            ({counts[filter]})
+          </span>
+        </h1>
+
+        {filtered.length === 0 ? (
+          <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "monospace", fontStyle: "italic" }}>
+            No models here
+          </p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 18 }}>
+            {filtered.map((model) => (
               <div
+                key={model.key}
+                onClick={() => router.push(`/lobby/objectViewPage?key=${encodeURIComponent(model.key)}`)}
                 style={{
-                  position: "absolute",
-                  top: 0, left: 0,
-                  width: "100%", height: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  color: "#fff",
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                  fontFamily: "monospace",
-                  zIndex: 1,
+                  borderRadius: 2, overflow: "hidden", background: "#111",
+                  border: model.isTrading
+                    ? "1px solid rgba(212,175,55,0.25)"
+                    : "1px solid rgba(255,255,255,0.06)",
+                  cursor: "pointer", transition: "border-color 0.22s",
+                  position: "relative",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = model.isTrading
+                    ? "rgb(212,175,55)"
+                    : "rgba(255,255,255,0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = model.isTrading
+                    ? "rgba(212,175,55,0.25)"
+                    : "rgba(255,255,255,0.06)";
                 }}
               >
-                Loading…
+                {model.isTrading && (
+                  <div style={{
+                    position: "absolute", top: 8, right: 8, zIndex: 2,
+                    background: "rgba(212,175,55,0.12)",
+                    border: "1px solid rgba(212,175,55,0.45)",
+                    borderRadius: 2, padding: "2px 7px",
+                    fontFamily: "monospace", fontSize: "0.62rem",
+                    color: "rgb(212,175,55)", letterSpacing: "0.06em",
+                    pointerEvents: "none",
+                  }}>
+                    trading
+                  </div>
+                )}
+
+                <div
+                  ref={(el) => { if (el) containerRefs.current.set(model.key, el); }}
+                  style={{ width: "100%", height: 220, background: "#0e0e0e", position: "relative" }}
+                >
+                  {loadingModels[model.key] && (
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "rgba(255,255,255,0.2)",
+                      fontFamily: "monospace", fontSize: "0.75rem",
+                    }}>
+                      Loading…
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
-    </>
+        )}
+      </main>
+    </div>
   );
 }

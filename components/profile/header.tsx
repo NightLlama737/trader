@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import SearchBar from "../searchBar";
 
-export default function Header({ nickname }: { nickname?: string }) {
+
+export default function HeaderProfile({ nickname }: { nickname?: string }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -51,36 +52,36 @@ export default function Header({ nickname }: { nickname?: string }) {
 
   return (
     <>
-      {/* Nav buttons */}
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "4px" }}>
-        <button className="btn-ghost" onClick={() => router.push("/dashboard")}><h1 style={{
+        <button className="btn-ghost" onClick={() => router.push("/lobby")}><h1 style={{
+          fontFamily: "monospace",
+          fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
+          color: "rgba(245,240,232,0.6)", marginBottom: 16,
+        }}>My models</h1></button>
+        <button className="btn-ghost" onClick={() => router.push("/lobby")}><h1 style={{
           fontFamily: "monospace",
           fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
           color: "rgba(245,240,232,0.6)", marginBottom: 16,
         }}>Trading</h1></button>
-       
       </div>
-
+      
         <SearchBar/>
-      {/* User menu */}
+
+
       {nickname && (
         <div style={{ position: "relative" }} ref={menuRef}>
           <button
             onClick={() => setMenuOpen((o) => !o)}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 14px",
-              borderRadius: "2px",
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "6px 14px", borderRadius: "2px",
               border: "1px solid rgba(245,240,232,0.15)",
               background: "transparent",
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontSize: "0.9rem",
               color: "rgba(245,240,232,0.6)",
               letterSpacing: "0.05em",
-              cursor: "pointer",
-              transition: "all 0.2s",
+              cursor: "pointer", transition: "all 0.2s",
             }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "#f5f0e8"; e.currentTarget.style.borderColor = "rgb(212,175,55)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(245,240,232,0.6)"; e.currentTarget.style.borderColor = "rgba(245,240,232,0.15)"; }}
@@ -104,12 +105,9 @@ export default function Header({ nickname }: { nickname?: string }) {
           {menuOpen && (
             <div style={{
               position: "absolute", right: 0, top: "calc(100% + 8px)",
-              minWidth: 180,
-              background: "#0f0f0f",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "2px",
-              overflow: "hidden",
-              zIndex: 999,
+              minWidth: 180, background: "#0f0f0f",
+              border: "1px solid rgba(255,255,255,0.08)", borderRadius: "2px",
+              overflow: "hidden", zIndex: 999,
               boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
             }}>
               <div style={NAV_LABEL}>Account</div>

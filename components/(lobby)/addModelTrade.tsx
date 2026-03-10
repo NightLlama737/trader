@@ -1,8 +1,35 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type Category = { id: string; name: string };
+
+const LABEL: React.CSSProperties = {
+  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontSize: "0.68rem",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "rgba(245,240,232,0.35)",
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  width: "100%",
+};
+
+const INPUT: React.CSSProperties = {
+  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontSize: "1rem",
+  fontWeight: 300,
+  background: "transparent",
+  color: "#f5f0e8",
+  border: "none",
+  borderBottom: "1px solid rgba(255,255,255,0.12)",
+  padding: "8px 0",
+  outline: "none",
+  caretColor: "#f5f0e8",
+  width: "100%",
+};
 
 export default function AddModelTrade() {
   const searchParams = useSearchParams();
@@ -18,166 +45,136 @@ export default function AddModelTrade() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => setCategories(d.categories || []));
+    fetch("/api/getCategories").then((r) => r.json()).then((d) => setCategories(d.categories || []));
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const filtered = categories.filter((c) =>
-    c.name.toLowerCase().includes(categoryInput.toLowerCase())
-  );
+  const filtered = categories.filter((c) => c.name.toLowerCase().includes(categoryInput.toLowerCase()));
 
   const handleSubmit = async () => {
     if (!s3Key) return alert("Missing S3 key!");
-
     try {
       const res = await fetch("/api/offModelTrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          s3Key,
-          name,
-          description,
-          price,
-          categoryName: categoryInput.trim() || undefined,
-        }),
+        body: JSON.stringify({ s3Key, name, description, price, categoryName: categoryInput.trim() || undefined }),
       });
-
       const data = await res.json();
-      if (res.ok) {
-        router.push("/lobby");
-      } else {
-        alert("Error: " + data.error);
-      }
+      if (res.ok) router.push("/lobby");
+      else alert("Error: " + data.error);
     } catch (err) {
       console.error(err);
       alert("Something went wrong.");
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    outline: "none",
-    color: "lightgray",
-    paddingLeft: "10px",
-    border: "none",
-    width: "70%",
-    backgroundColor: "black",
-    marginBottom: "10px",
-  };
-
   return (
-    <div
-      style={{
-        color: "white",
-        display: "flex",
-        alignItems: "center",
-        width: "500px",
-        flexDirection: "column",
-        gap: "10px",
-        padding: "20px",
-      }}
-    >
-      <h2>Add Model to Trade</h2>
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 22,
+      width: 400,
+      padding: "44px 40px",
+      border: "1px solid rgba(255,255,255,0.07)",
+      borderRadius: 3,
+      background: "#111",
+    }}>
+      <h2 style={{
+        fontFamily: "'Playfair Display', Georgia, serif",
+        fontWeight: 400,
+        fontSize: "1.4rem",
+        color: "#fff",
+        marginBottom: 4,
+      }}>
+        List for Trading
+      </h2>
 
-      <label style={{ width: "100%", }}>
-        Name:
-        <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} />
+      <label style={LABEL}>
+        Name
+        <input style={INPUT} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
 
-      <label style={{ width: "100%",}}>
-        Description:
-        <input style={inputStyle} value={description} onChange={(e) => setDescription(e.target.value)} />
+      <label style={LABEL}>
+        Description
+        <input style={INPUT} value={description} onChange={(e) => setDescription(e.target.value)} />
       </label>
 
-      <label style={{ width: "100%", color: "green", fontFamily: "monospace" }}>
-        Price:
-        <input
-          style={inputStyle}
-          type="number"
-          value={price}
-          onChange={(e) => setPrice(Number(e.target.value))}
-        />
+      <label style={LABEL}>
+        Price (€)
+        <input type="number" style={INPUT} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
       </label>
 
-      {/* Category input with dropdown */}
-      <label style={{ width: "100%", position: "relative" }}>
-        Category:
-        <div ref={dropdownRef} style={{ display: "inline-block", width: "70%", position: "relative" }}>
+      <label style={{ ...LABEL, position: "relative" }}>
+        Category
+        <div ref={dropdownRef} style={{ position: "relative" }}>
           <input
-            style={{ ...inputStyle, width: "100%", marginBottom: 0 }}
+            style={INPUT}
             value={categoryInput}
-            onChange={(e) => {
-              setCategoryInput(e.target.value);
-              setDropdownOpen(true);
-            }}
+            onChange={(e) => { setCategoryInput(e.target.value); setDropdownOpen(true); }}
             onFocus={() => setDropdownOpen(true)}
             placeholder="Type or select…"
           />
           {dropdownOpen && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                backgroundColor: "#111",
-                border: "1px solid #333",
-                borderRadius: "6px",
-                zIndex: 100,
-                maxHeight: "180px",
-                overflowY: "auto",
-              }}
-            >
-              {filtered.length === 0 && categoryInput.trim() !== "" && (
+            <div style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0, right: 0,
+              background: "#181818",
+              border: "1px solid rgba(255,255,255,0.09)",
+              borderRadius: 2,
+              zIndex: 100,
+              maxHeight: 160,
+              overflowY: "auto",
+            }}>
+              {categoryInput.trim() !== "" && filtered.length === 0 && (
                 <div
                   style={{
-                    padding: "8px 12px",
-                    color: "white",
+                    padding: "10px 14px",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "0.95rem",
+                    color: "rgba(245,240,232,0.55)",
                     cursor: "pointer",
-                    fontSize: "13px",
-                    borderBottom: "1px solid #222",
+                    borderBottom: "1px solid rgba(255,255,255,0.05)",
                   }}
-                  onClick={() => {
-                    setDropdownOpen(false);
-                  }}
+                  onClick={() => setDropdownOpen(false)}
                 >
-                  ＋ Create &quot;{categoryInput.trim()}&quot;
+                  Create "{categoryInput.trim()}"
                 </div>
               )}
               {filtered.map((c) => (
                 <div
                   key={c.id}
                   style={{
-                    padding: "8px 12px",
-                    color: "white",
+                    padding: "10px 14px",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "0.95rem",
+                    color: "rgba(245,240,232,0.45)",
                     cursor: "pointer",
-                    borderBottom: "1px solid #222",
-
-                    fontSize: "13px",
+                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    transition: "color 0.15s",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "lightgray")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-                  onClick={() => {
-                    setCategoryInput(c.name);
-                    setDropdownOpen(false);
-                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#f5f0e8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.45)")}
+                  onClick={() => { setCategoryInput(c.name); setDropdownOpen(false); }}
                 >
                   {c.name}
                 </div>
               ))}
               {categories.length === 0 && (
-                <div style={{ padding: "8px 12px", color: "#555", fontFamily: "monospace", fontSize: "12px" }}>
+                <div style={{
+                  padding: "10px 14px",
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: "0.85rem",
+                  color: "rgba(245,240,232,0.18)",
+                  fontStyle: "italic",
+                }}>
                   No categories yet
                 </div>
               )}
@@ -186,24 +183,8 @@ export default function AddModelTrade() {
         </div>
       </label>
 
-      <button
-        style={{
-          marginTop: "10px",
-          height: "40px",
-          borderRadius: "5px",
-          color: "green",
-          border: "none",
-          width: "40%",
-          backgroundColor: "black",
-          fontFamily: "monospace",
-          cursor: "pointer",
-          transition: "color 0.3s",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "lightgreen")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "green")}
-        onClick={handleSubmit}
-      >
-        <h2>[ Submit ]</h2>
+      <button className="btn-primary" style={{ width: "100%", marginTop: 10 }} onClick={handleSubmit}>
+        List Model
       </button>
     </div>
   );

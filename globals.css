@@ -1,130 +1,260 @@
-/* ============================================================
-   GLOBAL DARK THEME
-   font: monospace  |  bg: #000  |  text: #fff  |  panels: #1a1a1a / #222
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
 
-   DŮLEŽITÉ: border: none NESMÍ být na * !important
-   — first_page.tsx používá divy s inline border: "2px solid white"
-     pro kreslení kruhů a šipek, ty by zmizely.
-   Reset borderů je jen na formulářových / UI elementech.
-   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
-/* Border + outline reset POUZE na form/UI prvcích, ne na všech divech */
-input, textarea, select, button, header, nav, footer {
-  border: none;
-  outline: none;
-}
-  
-input:focus, textarea:focus, select:focus, button:focus {
-  outline: none;
+:root {
+  --bg:            #0a0a0a;
+  --bg-card:       #111111;
+  --bg-hover:      #161616;
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-hover:  rgba(255, 255, 255, 0.22);
+  --cream:         #f5f0e8;
+  --cream-dim:     rgba(245, 240, 232, 0.55);
+  --cream-muted:   rgba(245, 240, 232, 0.22);
+  --white:         #ffffff;
+  --danger:        rgba(210, 90, 90, 0.8);
+  --serif:         'Cormorant Garamond', Georgia, serif;
+  --serif-display: 'Playfair Display', Georgia, serif;
 }
 
 html, body {
   margin: 0;
   padding: 0;
-  background: #000;
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 16px;
+  color: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Typography ─────────────────────────────────────────── */
-h1, h3, h4, h5, h6, p, label, span, a, li, td, th {
-    font-family: Arial, Helvetica, sans-serif;
-  color: #fff;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--serif-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--white);
+}
+
+p, label, span, li, td, th {
+  font-family: var(--serif);
+  color: var(--cream-dim);
 }
 
 a {
   text-decoration: none;
-  color: #fff;
+  color: var(--cream-dim);
+  transition: color 0.2s;
 }
+a:hover { color: var(--white); }
 
-/* ── Inputs / Textareas ─────────────────────────────────── */
-input, textarea, select {
-  font-family: Arial, Helvetica, sans-serif;
-  background: #111;
-  color: #fff;
-  caret-color: #fff;
-  padding: 6px 10px;
-  border-radius: 4px;
-}
+/* ── Scrollbar ── */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: var(--bg); }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.1); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
 
-input::placeholder,
-textarea::placeholder {
-  color: #555;
-}
+/* ─────────────────────────────────────────
+   BUTTONS
+   ───────────────────────────────────────── */
 
-/* ── Buttons ────────────────────────────────────────────── */
 button {
-  background: #1a1a1a;
+  font-family: var(--serif-display);
   cursor: pointer;
-  border-radius: 5px;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.22s ease;
+  background: transparent;
+  border: none;
+  color: var(--cream-dim);
 }
-
-button:hover {
-  background: #2a2a2a;
-  color: lightgray;
-}
-
 button:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+button:hover {
+  background: transparent;
+  color: var(--white);
+}
+
+/* Ghost */
+.btn-ghost {
+  font-family: var(--serif-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.07em;
+  color: var(--cream-dim);
+  background: transparent;
+  padding: 7px 18px;
+  border-radius: 2px;
+    color: var(--white);
+
+  cursor: pointer;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+.btn-ghost:hover {
+  color: var(--white);
+  border-color: var(--border-hover);
+  background: rgba(255,255,255,0.04);
+}
+
+/* Primary */
+.btn-primary {
+  font-family: var(--serif-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.09em;
+  color: var(--cream);
+  background: transparent;
+  border: 1px solid rgba(245,240,232,0.25);
+  padding: 9px 26px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  color: var(--white);
+  border-color: rgb(212,175,55);
+  background: rgba(255,255,255,0.06);
+}
+.btn-primary:disabled {
+  color: var(--cream-muted);
+  border-color: rgba(255,255,255,0.06);
   cursor: not-allowed;
 }
 
-/* ── Glass / panel helper ───────────────────────────────── */
-.btn-glass {
-  font-family: Arial, Helvetica, sans-serif;
-  background: #1a1a1a;
-  color: #fff !important;
-  padding: 8px 16px;
-  border-radius: 5px;
-  margin-left: 4%;
+/* Danger */
+.btn-danger {
+  font-family: var(--serif-display);
+  font-size: 0.88rem;
+  letter-spacing: 0.07em;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid rgba(210,90,90,0.2);
+  padding: 7px 18px;
+  border-radius: 2px;
   cursor: pointer;
-  transition: background 0.2s;
-  border: none;
+  transition: all 0.22s ease;
+  display: inline-block;
+  text-align: center;
+}
+.btn-danger:hover {
+  color: #ff9090;
+  border-color: rgba(210,90,90,0.5);
+  background: rgba(210,90,90,0.05);
 }
 
+/* Legacy alias used in headers */
+.btn-glass {
+  font-family: var(--serif-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.07em;
+  color: var(--cream-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 7px 18px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
 .btn-glass:hover {
-  background: #2a2a2a;
+  color: var(--white);
+  border-color: var(--border-hover);
+  background: rgba(255,255,255,0.04);
 }
 
-/* ── glass-morph panels ─────────────────────────────────── */
+/* ─────────────────────────────────────────
+   INPUTS
+   ───────────────────────────────────────── */
+
+input, textarea, select {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 300;
+  background: transparent;
+  color: var(--cream);
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  border-radius: 0;
+  padding: 8px 2px;
+  outline: none;
+  caret-color: var(--cream);
+  transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+  border-bottom-color: rgba(245,240,232,0.45);
+  outline: none;
+  box-shadow: none;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--cream-muted);
+  font-style: italic;
+}
+
+/* ─────────────────────────────────────────
+   PANELS
+   ───────────────────────────────────────── */
+
 .glass-morph {
-  background: #1a1a1a !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border);
+  border-radius: 3px;
   backdrop-filter: none;
 }
 
-/* ── Header (fixed top bar) ─────────────────────────────── */
 header {
-  background: #111 !important;
+  background: rgba(10,10,10,0.92) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
 }
 
-/* ── Scrollbar (subtle) ─────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #000; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+/* ─────────────────────────────────────────
+   LOADING RING  (first_page.tsx — keep intact)
+   ───────────────────────────────────────── */
 
-/* ── Tailwind overrides ─────────────────────────────────── */
-.bg-black          { background-color: #000 !important; }
-.bg-gray-800       { background-color: #1a1a1a !important; }
-.bg-gray-900       { background-color: #111 !important; }
-.text-green-400    { color: #fff !important; }
-.text-pink-400     { color: #ccc !important; }
-.text-white        { color: #fff !important; }
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes spin-conic {
+  from { --angle: 0deg; }
+  to   { --angle: 360deg; }
+}
+.loading-ring {
+  border-radius: 50%;
+  animation: spin-conic 1s linear forwards;
+  background: conic-gradient(white var(--angle), transparent var(--angle));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), white calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), white calc(100% - 3px));
+}
 
-/* Tailwind border utilities — reset jen třídy, ne inline styly */
-.border            { border: none !important; }
-.border-gray-800   { border: none !important; }
+/* ─────────────────────────────────────────
+   MISC
+   ───────────────────────────────────────── */
 
-/* gradient bg on objectView → plain dark */
-.bg-gradient-to-br { background: #000 !important; }
-
-/* ── Loading overlay ────────────────────────────────────── */
-.loading-overlay {
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
+.fade-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 9999;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .header_div {
@@ -132,5 +262,15 @@ header {
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
-  width: 10000px;
 }
+
+/* Tailwind token overrides */
+.bg-black            { background-color: var(--bg) !important; }
+.bg-gray-800         { background-color: var(--bg-card) !important; }
+.bg-gray-900         { background-color: var(--bg) !important; }
+.text-white          { color: var(--cream) !important; }
+.text-green-400      { color: var(--cream-dim) !important; }
+.text-pink-400       { color: var(--cream-muted) !important; }
+.border              { border: none !important; }
+.border-gray-800     { border: none !important; }
+.bg-gradient-to-br   { background: var(--bg) !important; }

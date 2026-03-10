@@ -5,21 +5,18 @@ export default function AddObjectButton() {
   const router = useRouter();
   return (
     <button
+      className="btn-primary"
       style={{
         position: "fixed",
-        left: "45%",
-        bottom: 20,
-        width: "12%",
-        background: "#1a1a1a",
-        color: "#fff",
-        fontFamily: "monospace",
-        padding: "10px",
-        borderRadius: "5px",
-        cursor: "pointer",
+        left: "50%",
+        transform: "translateX(-50%)",
+        bottom: 36,
+        zIndex: 10,
+        minWidth: 160,
       }}
       onClick={() => router.push("/lobby/addObject")}
     >
-      [ Add model ]
+      Add Model
     </button>
   );
 }

@@ -3,13 +3,13 @@ import { NextResponse } from "next/server";
 import { s3 } from "../../../lib/S3";
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { prisma } from "../../../lib/prisma";
 
 export async function GET(req: Request) {
   try {
     const cookie = req.headers.get("cookie");
     if (!cookie) return NextResponse.json({ models: [] });
 
-    // Parse cookies
     const parsed = Object.fromEntries(
       cookie.split("; ").map((c) => {
         const [key, val] = c.split("=");
@@ -20,31 +20,28 @@ export async function GET(req: Request) {
     const userCookie = parsed.user;
     if (!userCookie) return NextResponse.json({ models: [] });
 
-    const user = JSON.parse(userCookie); // { id, nickname }
+    const user = JSON.parse(userCookie);
 
     const bucket = process.env.AWS_S3_BUCKET!;
-    const region = process.env.AWS_REGION!;
-    const prefix = `models/${user.id}/`; // složka konkrétního uživatele
+    const prefix = `models/${user.id}/`;
 
-    // Načteme všechny soubory z S3 pro daného uživatele
     const s3Objects = await s3.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: prefix,
-      })
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix })
     );
 
-    // Vygenerujeme presigned URL pro každý soubor
+    // Fetch all offModel keys for this user to determine trading status
+    const offModels = await prisma.offModel.findMany({
+      where: { userId: user.id },
+      select: { key: true },
+    });
+    const tradingKeys = new Set(offModels.map((o) => o.key));
+
     const models = await Promise.all(
       (s3Objects.Contents || []).map(async (obj) => {
         if (!obj.Key) return null;
 
-        const command = new GetObjectCommand({
-          Bucket: bucket,
-          Key: obj.Key,
-        });
-
-        const url = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hodina
+        const command = new GetObjectCommand({ Bucket: bucket, Key: obj.Key });
+        const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
         return {
           key: obj.Key,
@@ -52,6 +49,7 @@ export async function GET(req: Request) {
           url,
           lastModified: obj.LastModified,
           size: obj.Size,
+          isTrading: tradingKeys.has(obj.Key),
         };
       })
     );

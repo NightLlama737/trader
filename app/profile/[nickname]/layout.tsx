@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import Header from "@/components/(dashboard)/header";
+import HeaderProfile from "@/components/profile/header";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Trading dashboard",
+    title: "Profile",
+  description: "User profile",
+
 };
 
-export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function ProfileLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies();
   const raw = cookieStore.get("user")?.value;
   let nickname: string | undefined;
@@ -31,7 +32,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
           zIndex: 100,
         }}
       >
-        <Header nickname={nickname} />
+        <HeaderProfile nickname={nickname} />
       </header>
 
       <div

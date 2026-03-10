@@ -3,22 +3,15 @@ import { cookies } from "next/headers";
 import Header from "@/components/(lobby)/header";
 
 export const metadata: Metadata = {
-  title: "Authentication page",
-  description: "Auth of the traders",
+  title: "Lobby",
+  description: "Model lobby",
 };
 
-export default async function LobbyLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default async function LobbyLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies();
   const raw = cookieStore.get("user")?.value;
-
   let nickname: string | undefined;
-  try {
-    if (raw) nickname = JSON.parse(raw).nickname;
-  } catch {}
+  try { if (raw) nickname = JSON.parse(raw).nickname; } catch {}
 
   return (
     <>
@@ -30,12 +23,12 @@ export default async function LobbyLayout({
           display: "flex",
           left: "20%",
           right: "20%",
-          borderRadius: "70px",
+          borderRadius: "4px",
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "10px 20px",
-          backgroundColor: "black",
+          padding: "10px 28px",
+          zIndex: 100,
         }}
       >
         <Header nickname={nickname} />
@@ -47,7 +40,7 @@ export default async function LobbyLayout({
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          background: "black",
+          background: "#0a0a0a",
           minHeight: "100vh",
         }}
       >

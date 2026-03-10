@@ -7,7 +7,32 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Model = { id: string; key: string; url: string };
-type OffModelInfo = { id: string; key: string; name: string; description: string; price: number; url?: string };
+type OffModelInfo = { id: string; key: string; name: string; description: string; price: number };
+
+const LABEL: React.CSSProperties = {
+  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontSize: "0.65rem",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "rgba(245,240,232,0.3)",
+  display: "flex",
+  flexDirection: "column",
+  gap: 5,
+};
+
+const INPUT: React.CSSProperties = {
+  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontSize: "0.95rem",
+  fontWeight: 300,
+  background: "transparent",
+  color: "#f5f0e8",
+  border: "none",
+  borderBottom: "1px solid rgba(255,255,255,0.1)",
+  padding: "7px 0",
+  outline: "none",
+  caretColor: "#f5f0e8",
+  width: "100%",
+};
 
 export default function ObjectView() {
   const searchParams = useSearchParams();
@@ -25,78 +50,59 @@ export default function ObjectView() {
   useEffect(() => {
     if (!key) return;
     fetch(`/api/getSignedUrl?key=${encodeURIComponent(key)}`)
-      .then((res) => res.json())
-      .then((data) => setModel(data.model || { id: key, key, url: data.url }))
+      .then((r) => r.json())
+      .then((d) => setModel(d.model || { id: key, key, url: d.url }))
       .catch(console.error);
   }, [key]);
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") router.push("/lobby"); };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") router.push("/lobby"); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
   }, [router]);
 
   useEffect(() => {
     if (!mountRef.current || !model) return;
     const container = mountRef.current;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-
-    const width = container.clientWidth, height = container.clientHeight;
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    scene.background = new THREE.Color(0x0e0e0e);
+    const w = container.clientWidth, h = container.clientHeight;
+    const camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000);
     camera.position.z = 5;
-
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
+    renderer.setSize(w, h);
     if (!container.contains(renderer.domElement)) container.appendChild(renderer.domElement);
-
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-
     scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 10);
-    dirLight.position.set(5, 5, 5);
-    scene.add(dirLight);
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 10);
-    dirLight2.position.set(-5, 3, -5);
-    scene.add(dirLight2);
-
+    const d1 = new THREE.DirectionalLight(0xffffff, 10); d1.position.set(5, 5, 5); scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0xffffff, 6); d2.position.set(-5, 3, -5); scene.add(d2);
     const loader = new GLTFLoader();
     loader.load(model.url, (gltf) => {
-      const obj = gltf.scene;
-      scene.add(obj);
+      const obj = gltf.scene; scene.add(obj);
       const box = new THREE.Box3().setFromObject(obj);
-      const center = box.getCenter(new THREE.Vector3());
-      obj.position.sub(center);
+      obj.position.sub(box.getCenter(new THREE.Vector3()));
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
       const fov = camera.fov * (Math.PI / 180);
-      const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5;
-      camera.position.set(0, maxDim * 0.5, cameraZ);
-      camera.lookAt(0, 0, 0);
-      controls.target.set(0, 0, 0);
-      controls.update();
-    }, undefined, (err) => console.error("Error loading GLTF:", err));
-
+      camera.position.set(0, maxDim * 0.5, Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5);
+      camera.lookAt(0, 0, 0); controls.target.set(0, 0, 0); controls.update();
+    }, undefined, console.error);
     const animate = () => { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); };
     animate();
-
-    return () => {
-      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
-      renderer.dispose();
-    };
+    return () => { if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement); renderer.dispose(); };
   }, [model]);
 
   useEffect(() => {
     if (!model) return;
     fetch(`/api/offModels?key=${encodeURIComponent(model.key)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.model) {
-          setOffInfo(data.model);
-          setName(data.model.name || "");
-          setDescription(data.model.description || "");
-          setPrice(data.model.price ?? "");
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.model) {
+          setOffInfo(d.model);
+          setName(d.model.name || "");
+          setDescription(d.model.description || "");
+          setPrice(d.model.price ?? "");
         }
       })
       .catch(() => {});
@@ -109,241 +115,158 @@ export default function ObjectView() {
       const res = await fetch("/api/updateTrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: model.key,
-          name,
-          description,
-          price: Number(price) || 0,
-        }),
+        body: JSON.stringify({ key: model.key, name, description, price: Number(price) || 0 }),
       });
-      if (!res.ok) throw new Error("Save failed");
-      const data = await res.json();
-      setOffInfo(data.offModel);
-    } catch (err) {
-      console.error(err);
-      alert("Uložení se nezdařilo.");
-    } finally {
-      setSaving(false);
-    }
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      setOffInfo(d.offModel);
+    } catch { alert("Save failed."); }
+    finally { setSaving(false); }
   };
 
   const handleRemoveFromTrading = async () => {
-    if (!model) return;
-    if (!confirm("Odebrat model z obchodu?")) return;
+    if (!model || !confirm("Remove from trading?")) return;
     setRemoving(true);
     try {
-      const res = await fetch(`/api/offModels?key=${encodeURIComponent(model.key)}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Remove failed");
-      setOffInfo(null);
-      setName("");
-      setDescription("");
-      setPrice("");
-    } catch (err) {
-      console.error(err);
-      alert("Odebrání se nezdařilo.");
-    } finally {
-      setRemoving(false);
-    }
+      const res = await fetch(`/api/offModels?key=${encodeURIComponent(model.key)}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setOffInfo(null); setName(""); setDescription(""); setPrice("");
+    } catch { alert("Remove failed."); }
+    finally { setRemoving(false); }
   };
 
   const handleDelete = async () => {
-    if (!model) return;
-    if (!confirm("Opravdu smazat tento model?")) return;
-    try {
-      const res = await fetch(`/api/models?key=${encodeURIComponent(model.key)}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Delete failed");
-      router.push("/lobby");
-    } catch (err) {
-      console.error(err);
-      alert("Smazání se nezdařilo.");
-    }
+    if (!model || !confirm("Permanently delete this model?")) return;
+    const res = await fetch(`/api/models?key=${encodeURIComponent(model.key)}`, { method: "DELETE" });
+    if (res.ok) router.push("/lobby");
+    else alert("Delete failed.");
   };
 
-  if (!key) return <div style={{ color: "#fff", fontFamily: "monospace" }}>Missing key</div>;
-  if (!model) return <div style={{ color: "#fff", fontFamily: "monospace" }}>Loading model…</div>;
-
-  const inputStyle: React.CSSProperties = {
-    background: "#111",
-    color: "#fff",
-    fontFamily: "monospace",
-    borderRadius: "4px",
-    padding: "6px 10px",
-    width: "100%",
-    border: "1px solid #2a2a2a",
-  };
-
-  const btnStyle = (color = "#fff"): React.CSSProperties => ({
-    flex: 1,
-    background: "#222",
-    color,
-    width: "100%",
-    borderRadius: 5,
-    padding: "8px",
-    cursor: "pointer",
-    border: "1px solid #333",
-    transition: "background 0.2s",
-  });
+  if (!key) return <p style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Missing key</p>;
+  if (!model) return <p style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Loading…</p>;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "80vh",
-        background: "#000",
-        fontFamily: "monospace",
-        position: "relative",
-      }}
-    >
-      <div style={{ display: "grid", gridTemplateColumns: "800px 300px", gap: 20 }}>
+    <div style={{
+      width: "80vw", height: "90vh",
+      display: "flex", justifyContent: "center", alignItems: "center",
+      minHeight: "80vh", background: "RGBA(10,10,10)",
+      fontFamily: "'Cormorant Garamond', Georgia, serif",
+      position: "relative", padding: "40px 20px",
+    }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1400px 280px", gap: 20 }}>
+
         {/* 3D viewer */}
-        <div
-          ref={mountRef}
-          style={{ width: 800, height: 500, background: "#111", borderRadius: "12px", overflow: "hidden" }}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            ref={mountRef}
+            style={{
+              width: "1400px", height: "700px",
+              background: "#0e0e0e",
+              borderRadius: 2,
+              overflow: "hidden",
+              border: "1px solid rgb(212,175,55)",
+            }}
+          />
+          <button className="btn-danger" style={{ alignSelf: "flex-start" }} onClick={handleDelete}>
+            Delete Model
+          </button>
+        </div>
 
         {/* Sidebar */}
-        <div
-          style={{
-            width: 300,
-            padding: 24,
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-            background: "#1a1a1a",
-            borderRadius: "12px",
-            color: "#fff",
-          }}
-        >
+        <div style={{
+          padding: "28px 20px",
+          height: "550px",
+          display: "flex", flexDirection: "column", gap: 18,
+          background: "#111",
+              border: "1px solid rgba(245,240,232,0.15)",
+          borderRadius: 2,
+        }}>
+          <p style={{
+            color: "rgba(245,240,232,0.18)",
+            fontSize: "0.68rem",
+            letterSpacing: "0.04em",
+            wordBreak: "break-all",
+            lineHeight: 1.5,
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+          }}>
+            {model.key}
+          </p>
+
           {offInfo ? (
             <>
-              <div style={{ color: "#555", fontSize: "0.7rem", wordBreak: "break-all" }}>{model.key}</div>
+              <label style={LABEL}>
+                Name
+                <input style={INPUT} value={name} onChange={(e) => setName(e.target.value)} />
+              </label>
+              <label style={LABEL}>
+                Description
+                <textarea
+                 value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  style={{ ...INPUT, resize: "none", minHeight: 70 }}
+                />
+              </label>
+              <label style={LABEL}>
+                Price (€)
+                <input
+                  type="number"
+                  style={INPUT}
+                  value={price as any}
+                  onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                />
+              </label>
 
-              <label style={{ fontSize: "0.75rem", color: "#888" }}>Name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
-
-              <label style={{ fontSize: "0.75rem", color: "#888" }}>Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                style={{ ...inputStyle, resize: "vertical", minHeight: "70px" }}
-              />
-
-              <label style={{ fontSize: "0.75rem", color: "#888" }}>Price</label>
-              <input
-                value={price as any}
-                onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))}
-                type="number"
-                style={inputStyle}
-              />
-
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button
-                  style={btnStyle(saving ? "lightgray" : "white")}
-                  onClick={handleSave}
-                  disabled={saving}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#2a3a2a")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#222")}
-                >
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                <button className="btn-primary" onClick={handleSave} disabled={saving}>
                   {saving ? "Saving…" : "Save"}
                 </button>
-                <button
-                  style={btnStyle(removing ? "lightgray" : " white")}
-                  onClick={handleRemoveFromTrading}
-                  disabled={removing}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#3a2a2a")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#222")}
-                >
-                  {removing ? "Removing…" : "Remove"}
+                <button className="btn-danger" onClick={handleRemoveFromTrading} disabled={removing}>
+                  {removing ? "Removing…" : "Remove from Trading"}
                 </button>
               </div>
 
               <a
                 href={model.url}
                 download={model.key.split("/").pop()}
-                style={{
-                  background: "#222",
-                  color: "#fff",
-                  borderRadius: 5,
-                  padding: "8px 12px",
-                  textAlign: "center",
-                  border: "1px solid #333",
-                  textDecoration: "none",
-                }}
+                className="btn-primary"
+                style={{ marginTop: 4, textAlign: "center" }}
               >
                 Download
               </a>
             </>
           ) : (
             <>
-              <h4 style={{color: "white", fontSize: "0.7rem", wordBreak: "break-all", margin: 0 }}>{model.key}</h4>
               <a
                 href={model.url}
                 download={model.key.split("/").pop()}
-                style={{
-                  background: "#222",
-                  color: "#fff",
-                  borderRadius: 5,
-                  padding: "8px 12px",
-                  fontFamily: "monospace",
-                  textAlign: "center",
-                  border: "1px solid #333",
-                  textDecoration: "none",
-                }}
+                className="btn-ghost"
+                style={{ border: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}
               >
                 Download
               </a>
               <button
-                style={btnStyle("lightgreen")}
+                className="btn-primary"
                 onClick={() => router.push(`/lobby/addObjectTrade?s3Key=${encodeURIComponent(model.key)}`)}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#2a3a2a")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#222")}
               >
-                Trade
+                List for Trading
               </button>
             </>
           )}
         </div>
-
-        {/* Delete row */}
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-          <button
-            onClick={handleDelete}
-            style={{
-              background: "#1a1a1a",
-              color: "#ff4444",
-              borderRadius: 5,
-              padding: "8px 16px",
-              fontFamily: "monospace",
-              cursor: "pointer",
-              border: "1px solid #3a1a1a",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#2a1a1a")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#1a1a1a")}
-          >
-            Delete model
-          </button>
-        </div>
       </div>
 
-      <div
-        style={{
-          position: "absolute",
-          bottom: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
-          fontSize: 14,
-          color: "#333",
-          fontFamily: "monospace",
-        }}
-      >
-        Press ESC to exit...
-      </div>
+      <p style={{
+        position: "absolute",
+        bottom: "0",
+        left: "50%",
+        transform: "translateX(-50%)",
+        fontSize: "0.72rem",
+        color: "white",
+        letterSpacing: "0.1em",
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+      }}>
+        Press ESC to exit
+      </p>
     </div>
   );
 }
