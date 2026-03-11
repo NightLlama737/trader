@@ -127,12 +127,11 @@ export default function OffModels() {
         overflowY: "auto", zIndex: 10,
       }}>
         <h1 style={{
-          fontFamily: "monospace",
-          fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
+fontFamily: "'Cormorant Garamond', Georgia, serif",          fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
           color: "rgb(212,175,55)", marginBottom: 16,
         }}>Trading</h1>
         <p style={{
-          fontFamily: "monospace",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase",
           color: "rgba(255,255,255,0.2)", marginBottom: 16,
         }}>
@@ -148,7 +147,7 @@ export default function OffModels() {
               onClick={() => setSelectedCategory(cat.id)}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                fontFamily: "monospace", fontSize: "0.88rem",
+                fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.88rem",
                 color: active ? "#fff" : "rgba(255,255,255,0.33)",
                 background: active ? "rgba(255,255,255,0.04)" : "transparent",
                 border: `1px solid ${active ? "rgba(255,255,255,0.13)" : "transparent"}`,
@@ -173,7 +172,7 @@ export default function OffModels() {
 
         {categories.length === 0 && (
           <p style={{
-            fontFamily: "monospace",
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontSize: "0.75rem", color: "rgba(255,255,255,0.15)",
             fontStyle: "italic", marginTop: 8,
           }}>
@@ -185,7 +184,7 @@ export default function OffModels() {
       {/* ── Main grid ── */}
       <main style={{ marginLeft: 210, flex: 1, padding: "44px 40px" }}>
         <h1 style={{
-          fontFamily: "monospace",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontWeight: 400, fontSize: "1.1rem", color: "#fff",
           marginBottom: 32, letterSpacing: "0.06em",
         }}>
@@ -196,11 +195,11 @@ export default function OffModels() {
         </h1>
 
         {loading ? (
-          <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "monospace", fontStyle: "italic" }}>
+          <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: "italic" }}>
             Loading…
           </p>
         ) : models.length === 0 ? (
-          <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "monospace", fontStyle: "italic" }}>
+          <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: "italic" }}>
             No models found
           </p>
         ) : (
@@ -227,7 +226,7 @@ export default function OffModels() {
                       position: "absolute", inset: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       color: "rgba(255,255,255,0.2)",
-                      fontFamily: "monospace", fontSize: "0.75rem",
+                      fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem",
                     }}>
                       Loading…
                     </div>
@@ -236,26 +235,26 @@ export default function OffModels() {
 
                 <div style={{ padding: "13px 15px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                   <p style={{
-                    fontFamily: "monospace",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
                     fontSize: "0.88rem", color: "#f5f0e8",
                     marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                   }}>
                     {model.name}
                   </p>
                   <p style={{
-                    fontFamily: "monospace",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
                     fontSize: "0.75rem", color: "rgba(245,240,232,0.3)",
                     marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                   }}>
                     {model.description}
                   </p>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontFamily: "monospace", fontSize: "0.88rem", color: "rgba(245,240,232,0.6)" }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.88rem", color: "rgba(245,240,232,0.6)" }}>
                       {model.price} €
                     </span>
                     {model.category && (
                       <span style={{
-                        fontFamily: "monospace",
+                        fontFamily: "'Cormorant Garamond', Georgia, serif",
                         fontSize: "0.62rem", color: "rgba(255,255,255,0.22)",
                         border: "1px solid rgba(255,255,255,0.07)",
                         borderRadius: 2, padding: "2px 7px", letterSpacing: "0.05em",

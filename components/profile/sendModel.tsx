@@ -224,7 +224,7 @@ const S: Record<string, React.CSSProperties> = {
   title: {
     margin: 0,
     color: "#f5f0e8",
-    fontFamily: "'Playfair Display', Georgia, serif",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: "1.5rem",
     fontWeight: 400,
     letterSpacing: "0.03em",
@@ -275,7 +275,7 @@ const S: Record<string, React.CSSProperties> = {
     border: "1px solid rgba(212,175,55,0.5)",
     borderRadius: 2,
     padding: "2px 8px",
-    fontFamily: "monospace",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: "0.6rem",
     color: "rgb(212,175,55)",
     letterSpacing: "0.06em",
@@ -285,7 +285,7 @@ const S: Record<string, React.CSSProperties> = {
     position: "absolute", inset: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
     color: "rgba(255,255,255,0.2)",
-    fontFamily: "monospace", fontSize: "0.72rem",
+    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.72rem",
   },
   modelFooter: {
     padding: "9px 12px",
@@ -295,7 +295,7 @@ const S: Record<string, React.CSSProperties> = {
     alignItems: "center",
   },
   modelKey: {
-    fontFamily: "monospace",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: "0.68rem",
     color: "rgba(255,255,255,0.3)",
     whiteSpace: "nowrap",
@@ -304,7 +304,7 @@ const S: Record<string, React.CSSProperties> = {
     maxWidth: 160,
   },
   tradingBadge: {
-    fontFamily: "monospace",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: "0.58rem",
     color: "rgb(212,175,55)",
     border: "1px solid rgba(212,175,55,0.3)",

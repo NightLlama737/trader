@@ -96,12 +96,8 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
       <aside style={S.sidebar}>
         <div style={S.avatar}>{user!.nickname[0].toUpperCase()}</div>
         <h1 style={S.name}>{user!.nickname}</h1>
-        <p style={S.uid}><code style={S.code}>{user!.id}</code></p>
 
-        <div style={S.table}>
-          <Row label="nickname" value={user!.nickname} />
-          <Row label="email"    value={user!.email} />
-        </div>
+        
 
         <div style={S.actions}>
           <ActionBtn
@@ -211,12 +207,12 @@ function ModelCard({ model }: { model: OffModel }) {
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>{model.description}</p>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3 }}>
-          <span style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "rgba(245,240,232,0.5)" }}>
+          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.8rem", color: "rgba(245,240,232,0.5)" }}>
             {model.price} €
           </span>
           {model.category && (
             <span style={{
-              fontFamily: "monospace", fontSize: "0.58rem",
+              fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.58rem",
               color: "rgba(255,255,255,0.18)",
               border: "1px solid rgba(255,255,255,0.07)",
               borderRadius: 2, padding: "1px 6px", letterSpacing: "0.04em",
@@ -238,12 +234,12 @@ function Row({ label, value }: { label: string; value: string }) {
       padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", gap: 16,
     }}>
       <span style={{
-        fontFamily: "monospace", fontSize: "0.67rem",
+        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.67rem",
         color: "rgba(255,255,255,0.2)", textTransform: "uppercase",
         letterSpacing: "0.08em", flexShrink: 0,
       }}>{label}</span>
       <span style={{
-        fontFamily: "monospace", fontSize: "0.78rem",
+        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.78rem",
         color: "rgba(255,255,255,0.48)", wordBreak: "break-all", textAlign: "right",
       }}>{value}</span>
     </div>
@@ -255,11 +251,13 @@ const S: Record<string, React.CSSProperties> = {
   page: {
     display: "flex",
     minHeight: "100vh",
+    width: "100%",
     background: "#0a0a0a",
     paddingTop: 90,
   },
   sidebar: {
     width: 290,
+    left: 0,
     minWidth: 290,
     position: "sticky",
     top: 90,
@@ -293,19 +291,19 @@ const S: Record<string, React.CSSProperties> = {
     border: "1px solid rgba(212,175,55,0.35)",
     display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: "1.8rem", color: "rgba(245,240,232,0.55)",
-    fontFamily: "'Playfair Display', Georgia, serif",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
     marginBottom: 4,
   },
   name: {
     margin: 0,
     color: "#f5f0e8",
-    fontFamily: "'Playfair Display', Georgia, serif",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: "1.2rem", fontWeight: 400,
     letterSpacing: "0.03em", textAlign: "center",
   },
   uid: { margin: 0, marginBottom: 4 },
   code: {
-    fontFamily: "monospace", fontSize: "0.68rem",
+    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.68rem",
     color: "rgba(255,255,255,0.18)",
     background: "rgba(255,255,255,0.03)",
     padding: "2px 6px", borderRadius: 4,
@@ -330,11 +328,11 @@ const S: Record<string, React.CSSProperties> = {
   },
   notFoundTitle: {
     margin: 0, color: "rgba(255,255,255,0.6)",
-    fontFamily: "monospace", fontSize: "1rem",
+    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "1rem",
   },
   notFoundSub: {
     margin: 0, color: "rgba(255,255,255,0.3)",
-    fontFamily: "monospace", fontSize: "0.78rem", textAlign: "center",
+    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.78rem", textAlign: "center",
   },
   spinner: {
     width: 28, height: 28, borderRadius: "50%",
@@ -344,12 +342,12 @@ const S: Record<string, React.CSSProperties> = {
   },
   sectionTitle: {
     margin: "0 0 24px", color: "#f5f0e8",
-    fontFamily: "'Playfair Display', Georgia, serif",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: "1.1rem", fontWeight: 400, letterSpacing: "0.04em",
   },
   count: {
     color: "rgba(255,255,255,0.22)", marginLeft: 8,
-    fontSize: "0.82rem", fontFamily: "monospace",
+    fontSize: "0.82rem", fontFamily: "'Cormorant Garamond', Georgia, serif",
   },
   muted: {
     color: "rgba(255,255,255,0.2)",

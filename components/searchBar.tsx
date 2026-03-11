@@ -38,13 +38,16 @@ export default function SearchBar() {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search users…"
         style={{
-          width: "100%",
+          width: "20%",
+          top: 25,
+          position: "fixed",
+          left: "40%", right: "40%",
           background: "rgba(255,255,255,0.04)",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 6,
           padding: "6px 12px",
           color: "rgba(255,255,255,0.7)",
-          fontFamily: "monospace",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",   
           fontSize: "0.8rem",
           outline: "none",
           boxSizing: "border-box",
@@ -53,9 +56,9 @@ export default function SearchBar() {
 
       {open && results.length > 0 && (
         <div style={{
-          position: "absolute",
-          top: "calc(100% + 6px)",
-          left: 0, right: 0,
+          position: "fixed",
+          top: 60,
+          left: "40%", right: "40%",
           background: "#0d0d0d",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 8,
@@ -70,7 +73,7 @@ export default function SearchBar() {
               style={{
                 padding: "9px 14px",
                 color: "rgba(255,255,255,0.6)",
-                fontFamily: "monospace",
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
                 fontSize: "0.82rem",
                 cursor: "pointer",
                 borderBottom: "1px solid rgba(255,255,255,0.04)",

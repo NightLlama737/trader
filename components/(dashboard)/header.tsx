@@ -54,7 +54,7 @@ export default function Header({ nickname }: { nickname?: string }) {
     <>
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "4px" }}>
         <button className="btn-ghost" onClick={() => router.push("/lobby")}><h1 style={{
-          fontFamily: "monospace",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
           color: "rgba(245,240,232,0.6)", marginBottom: 16,
         }}>My models</h1></button>
@@ -86,7 +86,7 @@ export default function Header({ nickname }: { nickname?: string }) {
               border: "1px solid rgb(212,175,55)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "0.75rem", color: "rgba(245,240,232,0.5)",
-              fontFamily: "'Playfair Display', Georgia, serif",
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
             }}>
               {nickname[0].toUpperCase()}
             </div>

@@ -115,7 +115,7 @@ export default function MyObjects() {
   };
 
   if (loading) return (
-    <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>Loading models…</p>
+    <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "'Cormorant Garamond', Georgia, serif", }}>Loading models…</p>
   );
 
   return (
@@ -133,7 +133,7 @@ export default function MyObjects() {
       }}>
        
           <h1 style={{
-          fontFamily: "monospace",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
           color: "rgb(212,175,55)", marginBottom: 16,
         }}>My models</h1>
@@ -147,7 +147,7 @@ export default function MyObjects() {
               onClick={() => setFilter(mode)}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                fontFamily: "monospace", fontSize: "0.88rem",
+                fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.88rem",
                 color: active ? "#fff" : "rgba(255,255,255,0.33)",
                 background: active ? "rgba(255,255,255,0.04)" : "transparent",
                 border: `1px solid ${active ? "rgba(255,255,255,0.13)" : "transparent"}`,
@@ -183,7 +183,7 @@ export default function MyObjects() {
               boxShadow: "0 0 5px rgba(212,175,55,0.5)",
               flexShrink: 0,
             }} />
-            <span style={{ color: "rgba(255,255,255,0.25)", fontFamily: "monospace", fontSize: "0.68rem" }}>
+            <span style={{ color: "rgba(255,255,255,0.25)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.68rem" }}>
               listed for trade
             </span>
           </div>
@@ -193,7 +193,7 @@ export default function MyObjects() {
               background: "rgba(255,255,255,0.18)",
               flexShrink: 0,
             }} />
-            <span style={{ color: "rgba(255,255,255,0.25)", fontFamily: "monospace", fontSize: "0.68rem" }}>
+            <span style={{ color: "rgba(255,255,255,0.25)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.68rem" }}>
               not listed
             </span>
           </div>
@@ -203,7 +203,7 @@ export default function MyObjects() {
       {/* ── Main grid ── */}
       <main style={{ marginLeft: 210, flex: 1, padding: "44px 40px" }}>
         <h1 style={{
-          fontFamily: "monospace",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontWeight: 400, fontSize: "1.1rem", color: "#fff",
           marginBottom: 32, letterSpacing: "0.06em",
         }}>
@@ -214,7 +214,7 @@ export default function MyObjects() {
         </h1>
 
         {filtered.length === 0 ? (
-          <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "monospace", fontStyle: "italic" }}>
+          <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: "italic" }}>
             No models here
           </p>
         ) : (
@@ -248,7 +248,7 @@ export default function MyObjects() {
                     background: "rgba(212,175,55,0.12)",
                     border: "1px solid rgba(212,175,55,0.45)",
                     borderRadius: 2, padding: "2px 7px",
-                    fontFamily: "monospace", fontSize: "0.62rem",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.62rem",
                     color: "rgb(212,175,55)", letterSpacing: "0.06em",
                     pointerEvents: "none",
                   }}>
@@ -265,7 +265,7 @@ export default function MyObjects() {
                       position: "absolute", inset: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       color: "rgba(255,255,255,0.2)",
-                      fontFamily: "monospace", fontSize: "0.75rem",
+                      fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem",
                     }}>
                       Loading…
                     </div>
