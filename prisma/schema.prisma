@@ -8,22 +8,29 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  nickname  String     @unique
-  createdAt DateTime   @default(now())
-  password  String
-  models    Model[]
-  offModels OffModel[]
+  id              String          @id @default(cuid())
+  email           String          @unique
+  nickname        String          @unique
+  createdAt       DateTime        @default(now())
+  password        String
+  credits         Int             @default(0)
+  models          Model[]
+  offModels       OffModel[]
+  renderedImages  RenderedImage[]
+  friendsAsRequester Friend[]     @relation("Requester")
+  friendsAsAddressee Friend[]     @relation("Addressee")
+  sentGifts       ModelGift[]     @relation("Sender")
+  receivedGifts   ModelGift[]     @relation("Receiver")
 }
 
 model Model {
-  id              String     @id @default(cuid())
-  createdAt       DateTime   @default(now())
+  id              String      @id @default(cuid())
+  createdAt       DateTime    @default(now())
   userId          String
   key             String
-  user            User       @relation(fields: [userId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
   offering_models OffModel[]
+  gifts           ModelGift[]
 }
 
 model Category {
@@ -46,4 +53,44 @@ model OffModel {
   model       Model?    @relation(fields: [modelId], references: [id])
   user        User      @relation(fields: [userId], references: [id])
   category    Category? @relation(fields: [categoryId], references: [id])
+}
+
+model RenderedImage {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String   @unique
+  title     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Friend {
+  id          String       @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      FriendStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  requester   User         @relation("Requester", fields: [requesterId], references: [id])
+  addressee   User         @relation("Addressee", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
+}
+
+model ModelGift {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  modelId    String
+  message    String?
+  seen       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  sender     User     @relation("Sender", fields: [senderId], references: [id])
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+  model      Model    @relation(fields: [modelId], references: [id])
 }

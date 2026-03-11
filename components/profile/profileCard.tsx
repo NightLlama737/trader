@@ -20,14 +20,27 @@ type OffModel = {
   category?: { id: string; name: string } | null;
 };
 
+type RenderedImage = {
+  id: string;
+  key: string;
+  title: string | null;
+  url: string;
+  createdAt: string;
+};
+
+type Tab = "models" | "renders";
+
 export default function ProfileCard({ nickname }: { nickname: string }) {
   const router = useRouter();
 
-  const [user, setUser]               = useState<User | null>(null);
-  const [loading, setLoading]         = useState(true);
-  const [notFound, setNotFound]       = useState(false);
-  const [models, setModels]           = useState<OffModel[]>([]);
+  const [user, setUser]                   = useState<User | null>(null);
+  const [loading, setLoading]             = useState(true);
+  const [notFound, setNotFound]           = useState(false);
+  const [models, setModels]               = useState<OffModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
+  const [renders, setRenders]             = useState<RenderedImage[]>([]);
+  const [rendersLoading, setRendersLoading] = useState(false);
+  const [activeTab, setActiveTab]         = useState<Tab>("models");
 
   /* ── Fetch user ── */
   useEffect(() => {
@@ -50,7 +63,7 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
     load();
   }, [nickname]);
 
-  /* ── Fetch this user's listed models ── */
+  /* ── Fetch listed models ── */
   useEffect(() => {
     if (!user) return;
     setModelsLoading(true);
@@ -64,10 +77,16 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
       .finally(() => setModelsLoading(false));
   }, [user]);
 
-  const handleFriendRequest = () => {
-    // TODO: implement friend request
-    console.log("Send friend request to", user?.id);
-  };
+  /* ── Fetch renders ── */
+  useEffect(() => {
+    if (!user) return;
+    setRendersLoading(true);
+    fetch(`/api/getRenderedImages?userId=${user.id}`)
+      .then((r) => r.json())
+      .then((d) => setRenders(d.images || []))
+      .catch(console.error)
+      .finally(() => setRendersLoading(false));
+  }, [user]);
 
   /* ── Loading ── */
   if (loading) return (
@@ -97,11 +116,9 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
         <div style={S.avatar}>{user!.nickname[0].toUpperCase()}</div>
         <h1 style={S.name}>{user!.nickname}</h1>
 
-        
-
         <div style={S.actions}>
           <ActionBtn
-            onClick={handleFriendRequest}
+            onClick={() => console.log("Send friend request to", user?.id)}
             label="+ Send Friend Request"
           />
           <ActionBtn
@@ -114,26 +131,100 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
         </div>
       </aside>
 
-      {/* ── Right: listed models ── */}
+      {/* ── Right: tabs + content ── */}
       <main style={S.main}>
-        <h2 style={S.sectionTitle}>
-          Listed Models
-          <span style={S.count}>({models.length})</span>
-        </h2>
 
-        {modelsLoading ? (
-          <p style={S.muted}>Loading…</p>
-        ) : models.length === 0 ? (
-          <p style={S.muted}>No models listed for trading.</p>
-        ) : (
-          <div style={S.grid}>
-            {models.map((m) => (
-              <ModelCard key={m.key} model={m} />
-            ))}
-          </div>
+        {/* Tab bar */}
+        <div style={S.tabBar}>
+          <TabButton
+            label="Listed Models"
+            count={models.length}
+            active={activeTab === "models"}
+            onClick={() => setActiveTab("models")}
+          />
+          <TabButton
+            label="Renders"
+            count={renders.length}
+            active={activeTab === "renders"}
+            onClick={() => setActiveTab("renders")}
+          />
+        </div>
+
+        {/* ── Models tab ── */}
+        {activeTab === "models" && (
+          <>
+            {modelsLoading ? (
+              <p style={S.muted}>Loading…</p>
+            ) : models.length === 0 ? (
+              <p style={S.muted}>No models listed for trading.</p>
+            ) : (
+              <div style={S.grid}>
+                {models.map((m) => (
+                  <ModelCard key={m.key} model={m} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Renders tab ── */}
+        {activeTab === "renders" && (
+          <>
+            {rendersLoading ? (
+              <p style={S.muted}>Loading…</p>
+            ) : renders.length === 0 ? (
+              <p style={S.muted}>No renders uploaded yet.</p>
+            ) : (
+              <div style={S.renderGrid}>
+                {renders.map((img) => (
+                  <RenderCard key={img.id} image={img} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
+  );
+}
+
+/* ── Tab button ── */
+function TabButton({
+  label, count, active, onClick,
+}: {
+  label: string; count: number; active: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: "0.9rem",
+        letterSpacing: "0.06em",
+        color: active ? "#fff" : "rgba(245,240,232,0.35)",
+        background: "transparent",
+        border: "none",
+        borderBottom: active ? "1px solid rgb(212,175,55)" : "1px solid transparent",
+        padding: "8px 4px",
+        marginRight: 32,
+        cursor: "pointer",
+        transition: "all 0.2s",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      {label}
+      <span style={{
+        fontSize: "0.68rem",
+        color: active ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.18)",
+        background: "rgba(255,255,255,0.05)",
+        borderRadius: 10,
+        padding: "1px 7px",
+      }}>
+        {count}
+      </span>
+    </button>
   );
 }
 
@@ -165,7 +256,7 @@ function ActionBtn({ onClick, label }: { onClick: () => void; label: string }) {
   );
 }
 
-/* ── Model card (static preview) ── */
+/* ── Model card ── */
 function ModelCard({ model }: { model: OffModel }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -226,23 +317,91 @@ function ModelCard({ model }: { model: OffModel }) {
   );
 }
 
-/* ── Row helper ── */
-function Row({ label, value }: { label: string; value: string }) {
+/* ── Render card ── */
+function RenderCard({ image }: { image: RenderedImage }) {
+  const [hovered, setHovered] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
+
   return (
-    <div style={{
-      display: "flex", justifyContent: "space-between", alignItems: "center",
-      padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", gap: 16,
-    }}>
-      <span style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.67rem",
-        color: "rgba(255,255,255,0.2)", textTransform: "uppercase",
-        letterSpacing: "0.08em", flexShrink: 0,
-      }}>{label}</span>
-      <span style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.78rem",
-        color: "rgba(255,255,255,0.48)", wordBreak: "break-all", textAlign: "right",
-      }}>{value}</span>
-    </div>
+    <>
+      <div
+        onClick={() => setLightbox(true)}
+        style={{
+          borderRadius: 2,
+          overflow: "hidden",
+          background: "#111",
+          border: `1px solid ${hovered ? "rgba(212,175,55,0.5)" : "rgba(255,255,255,0.06)"}`,
+          cursor: "pointer",
+          transition: "border-color 0.2s",
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div style={{ width: "100%", height: 180, overflow: "hidden", position: "relative" }}>
+          <img
+            src={image.url}
+            alt={image.title || "Render"}
+            style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.3s" }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          />
+        </div>
+        {image.title && (
+          <div style={{
+            padding: "9px 12px",
+            borderTop: "1px solid rgba(255,255,255,0.05)",
+          }}>
+            <p style={{
+              margin: 0,
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "0.82rem", color: "rgba(245,240,232,0.5)",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {image.title}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(false)}
+          style={{
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,0.88)",
+            zIndex: 9999,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={image.url}
+            alt={image.title || "Render"}
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "88vh",
+              objectFit: "contain",
+              borderRadius: 2,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          {image.title && (
+            <div style={{
+              position: "absolute",
+              bottom: 24,
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "0.9rem",
+              color: "rgba(255,255,255,0.4)",
+              letterSpacing: "0.06em",
+            }}>
+              {image.title}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -257,7 +416,6 @@ const S: Record<string, React.CSSProperties> = {
   },
   sidebar: {
     width: 290,
-    left: 0,
     minWidth: 290,
     position: "sticky",
     top: 90,
@@ -273,6 +431,13 @@ const S: Record<string, React.CSSProperties> = {
     flex: 1,
     padding: "40px 48px",
   },
+  tabBar: {
+    display: "flex",
+    alignItems: "center",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+    marginBottom: 32,
+    paddingBottom: 0,
+  },
   center: {
     minHeight: "100vh",
     display: "flex", alignItems: "center", justifyContent: "center",
@@ -283,7 +448,6 @@ const S: Record<string, React.CSSProperties> = {
     border: "1px solid rgba(255,255,255,0.08)",
     borderRadius: 14, padding: "40px 36px", width: "100%", maxWidth: 420,
     display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-    boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
   },
   avatar: {
     width: 72, height: 72, borderRadius: "50%",
@@ -301,17 +465,11 @@ const S: Record<string, React.CSSProperties> = {
     fontSize: "1.2rem", fontWeight: 400,
     letterSpacing: "0.03em", textAlign: "center",
   },
-  uid: { margin: 0, marginBottom: 4 },
   code: {
     fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.68rem",
     color: "rgba(255,255,255,0.18)",
     background: "rgba(255,255,255,0.03)",
     padding: "2px 6px", borderRadius: 4,
-  },
-  table: {
-    width: "100%",
-    borderTop: "1px solid rgba(255,255,255,0.05)",
-    marginTop: 4, marginBottom: 8,
   },
   actions: {
     display: "flex", flexDirection: "column", gap: 7, width: "100%", marginTop: 4,
@@ -340,15 +498,6 @@ const S: Record<string, React.CSSProperties> = {
     borderTop: "2px solid rgba(255,255,255,0.3)",
     animation: "spin 0.7s linear infinite",
   },
-  sectionTitle: {
-    margin: "0 0 24px", color: "#f5f0e8",
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
-    fontSize: "1.1rem", fontWeight: 400, letterSpacing: "0.04em",
-  },
-  count: {
-    color: "rgba(255,255,255,0.22)", marginLeft: 8,
-    fontSize: "0.82rem", fontFamily: "'Cormorant Garamond', Georgia, serif",
-  },
   muted: {
     color: "rgba(255,255,255,0.2)",
     fontFamily: "'Cormorant Garamond', Georgia, serif",
@@ -357,6 +506,11 @@ const S: Record<string, React.CSSProperties> = {
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))",
+    gap: 14,
+  },
+  renderGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
     gap: 14,
   },
 };
