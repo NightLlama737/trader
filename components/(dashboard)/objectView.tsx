@@ -6,7 +6,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { useRouter, useSearchParams } from "next/navigation";
 
-type OffModel = { id: string; key: string; name: string; description: string; price: number };
+type OffModel = { id: string; key: string; name: string; description: string; price: number; userId: string };
 
 export default function ObjectView() {
   const searchParams = useSearchParams();
@@ -15,7 +15,14 @@ export default function ObjectView() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animFrameRef = useRef<number>(0);
   const [model, setModel] = useState<OffModel | null>(null);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseMsg, setPurchaseMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/getUserId").then((r) => r.json()).then((d) => setMyUserId(d.userId)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!key) return;
@@ -35,7 +42,6 @@ export default function ObjectView() {
     if (!mountRef.current || !model || !key) return;
     const container = mountRef.current;
 
-    // Cleanup previous
     if (rendererRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       rendererRef.current.dispose();
@@ -88,6 +94,30 @@ export default function ObjectView() {
     };
   }, [model, key]);
 
+  const handlePurchase = async () => {
+    if (!model) return;
+    setPurchasing(true);
+    setPurchaseMsg(null);
+    try {
+      const res = await fetch("/api/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offModelId: model.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPurchaseMsg({ text: "Purchase request sent! The seller will be notified.", ok: true });
+      } else {
+        setPurchaseMsg({ text: data.error || "Failed to send purchase request", ok: false });
+      }
+    } catch {
+      setPurchaseMsg({ text: "Network error", ok: false });
+    }
+    setPurchasing(false);
+  };
+
+  const isOwner = myUserId && model && myUserId === model.userId;
+
   if (!key) return <p style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Missing key</p>;
   if (!model) return <p style={{ color: "#f5f0e8", fontFamily: "'Cormorant Garamond', Georgia, serif" }}>Loading…</p>;
 
@@ -112,10 +142,50 @@ export default function ObjectView() {
           <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(245,240,232,0.5)", fontSize: "0.95rem", lineHeight: 1.65 }}>
             {model.description}
           </p>
-          <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(245,240,232,0.7)", fontSize: "1.1rem", marginTop: "auto" }}>
+          <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(245,240,232,0.7)", fontSize: "1.3rem", marginTop: "auto" }}>
             {model.price} €
           </p>
-          <button className="btn-primary" style={{ marginTop: 8 }}>Purchase</button>
+
+          {purchaseMsg && (
+            <div style={{
+              padding: "10px 14px",
+              background: purchaseMsg.ok ? "rgba(212,175,55,0.07)" : "rgba(210,90,90,0.07)",
+              border: `1px solid ${purchaseMsg.ok ? "rgba(212,175,55,0.3)" : "rgba(210,90,90,0.3)"}`,
+              borderRadius: 2,
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "0.82rem",
+              color: purchaseMsg.ok ? "rgb(212,175,55)" : "rgba(210,90,90,0.9)",
+              lineHeight: 1.5,
+            }}>
+              {purchaseMsg.text}
+            </div>
+          )}
+
+          {!isOwner && !purchaseMsg?.ok && (
+            <button
+              className="btn-primary"
+              style={{ marginTop: 4 }}
+              onClick={handlePurchase}
+              disabled={purchasing}
+            >
+              {purchasing ? "Sending request…" : "Request Purchase"}
+            </button>
+          )}
+
+          {isOwner && (
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 2,
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "0.78rem",
+              color: "rgba(255,255,255,0.25)",
+              fontStyle: "italic",
+            }}>
+              This is your listing
+            </div>
+          )}
         </div>
       </div>
 

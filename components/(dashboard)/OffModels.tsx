@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useRouter } from "next/navigation";
+import FriendsList from "../friendsList";
 
 type Category = { id: string; name: string };
 type Model = {
@@ -26,7 +27,6 @@ export default function OffModels() {
     fetch("/api/getCategories").then((r) => r.json()).then((d) => setCategories(d.categories || []));
   }, []);
 
-  // Fetch all models once for counts
   useEffect(() => {
     fetch("/api/getOffModels")
       .then((r) => r.json())
@@ -107,9 +107,7 @@ export default function OffModels() {
   }, [models]);
 
   const countForCategory = (id: string | null) =>
-    id === null
-      ? allModels.length
-      : allModels.filter((m) => m.category?.id === id).length;
+    id === null ? allModels.length : allModels.filter((m) => m.category?.id === id).length;
 
   const selectedName = categories.find((c) => c.id === selectedCategory)?.name;
 
@@ -127,13 +125,14 @@ export default function OffModels() {
         overflowY: "auto", zIndex: 10,
       }}>
         <h1 style={{
-fontFamily: "'Cormorant Garamond', Georgia, serif",          fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
           color: "rgb(212,175,55)", marginBottom: 16,
         }}>Trading</h1>
         <p style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase",
-          color: "rgba(255,255,255,0.2)", marginBottom: 16,
+          color: "rgba(255,255,255,0.2)", marginBottom: 8,
         }}>
           Categories
         </p>
@@ -179,6 +178,9 @@ fontFamily: "'Cormorant Garamond', Georgia, serif",          fontSize: "1rem", l
             No categories
           </p>
         )}
+
+        <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "14px 0" }} />
+        <FriendsList />
       </aside>
 
       {/* ── Main grid ── */}

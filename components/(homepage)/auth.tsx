@@ -13,10 +13,7 @@ export default function Auth() {
   const [showText, setShowText] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShowText(true), 5000);
-    return () => clearTimeout(timer);
-  }, []);
+  
 
   const animatedText =
     userExists === null
@@ -25,7 +22,7 @@ export default function Auth() {
       ? "Welcome back"
       : "Create your account";
 
-  const title = useTypewriter(showText ? animatedText : "", 42);
+  const title = useTypewriter(animatedText, 42);
 
   const findUser = async () => {
     const res = await fetch("/api/findUser", {

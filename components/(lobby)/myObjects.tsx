@@ -13,13 +13,24 @@ type Model = {
   isTrading: boolean;
 };
 
-type FilterMode = "all" | "trading" | "not-trading";
+type RenderedImage = {
+  id: string;
+  key: string;
+  url: string;
+  createdAt: string;
+};
+
+type FilterMode = "all" | "trading" | "not-trading" | "renders";
 
 export default function MyObjects() {
   const [models, setModels] = useState<Model[]>([]);
+  const [renders, setRenders] = useState<RenderedImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
+  const [loadingRenders, setLoadingRenders] = useState(false);
   const [filter, setFilter] = useState<FilterMode>("all");
+  const [lightboxImg, setLightboxImg] = useState<RenderedImage | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const containerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const router = useRouter();
 
@@ -36,6 +47,16 @@ export default function MyObjects() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (filter !== "renders") return;
+    setLoadingRenders(true);
+    fetch("/api/getRenderedImage")
+      .then((r) => r.json())
+      .then((d) => setRenders(d.images || []))
+      .catch(console.error)
+      .finally(() => setLoadingRenders(false));
+  }, [filter]);
+
   const filtered = models.filter((m) => {
     if (filter === "trading") return m.isTrading;
     if (filter === "not-trading") return !m.isTrading;
@@ -43,6 +64,7 @@ export default function MyObjects() {
   });
 
   useEffect(() => {
+    if (filter === "renders") return;
     if (!filtered.length) return;
 
     const loader = new GLTFLoader();
@@ -102,20 +124,47 @@ export default function MyObjects() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [models, filter]);
 
+  const handleDeleteRender = async (img: RenderedImage, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (deletingId === img.id) return;
+    setDeletingId(img.id);
+    try {
+      const res = await fetch(`/api/getRenderedImage?id=${img.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setRenders((prev) => prev.filter((r) => r.id !== img.id));
+        if (lightboxImg?.id === img.id) setLightboxImg(null);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const FILTERS: { mode: FilterMode; label: string; icon: string }[] = [
     { mode: "all",         label: "All Objects",    icon: "◈" },
     { mode: "trading",     label: "In Trading",     icon: "◆" },
     { mode: "not-trading", label: "Not in Trading", icon: "◇" },
+    { mode: "renders",     label: "Renders",        icon: "⬡" },
   ];
 
   const counts: Record<FilterMode, number> = {
     all:           models.length,
     trading:       models.filter((m) => m.isTrading).length,
     "not-trading": models.filter((m) => !m.isTrading).length,
+    renders:       renders.length,
   };
 
+  const mainTitle =
+    filter === "all" ? "All Objects"
+    : filter === "trading" ? "In Trading"
+    : filter === "not-trading" ? "Not in Trading"
+    : "Renders";
+
   if (loading) return (
-    <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "'Cormorant Garamond', Georgia, serif", }}>Loading models…</p>
+    <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+      Loading models…
+    </p>
   );
 
   return (
@@ -131,13 +180,11 @@ export default function MyObjects() {
         display: "flex", flexDirection: "column", gap: 4,
         overflowY: "auto", zIndex: 10,
       }}>
-       
-          <h1 style={{
+        <h1 style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
           color: "rgb(212,175,55)", marginBottom: 16,
         }}>My models</h1>
-        
 
         {FILTERS.map(({ mode, label, icon }) => {
           const active = filter === mode;
@@ -153,9 +200,14 @@ export default function MyObjects() {
                 border: `1px solid ${active ? "rgba(255,255,255,0.13)" : "transparent"}`,
                 borderRadius: 2, padding: "7px 10px", textAlign: "left",
                 cursor: "pointer", transition: "all 0.2s",
+                marginTop: mode === "renders" ? 10 : 0,
               }}
-              onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-              onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "rgba(255,255,255,0.33)"; }}
+              onMouseEnter={(e) => {
+                if (!active) e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+              }}
+              onMouseLeave={(e) => {
+                if (!active) e.currentTarget.style.color = "rgba(255,255,255,0.33)";
+              }}
             >
               <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{icon}</span>
@@ -167,7 +219,7 @@ export default function MyObjects() {
                 background: "rgba(255,255,255,0.04)",
                 borderRadius: 10, padding: "1px 7px",
               }}>
-                {counts[mode]}
+                {mode === "renders" && filter !== "renders" ? "…" : counts[mode]}
               </span>
             </button>
           );
@@ -207,75 +259,264 @@ export default function MyObjects() {
           fontWeight: 400, fontSize: "1.1rem", color: "#fff",
           marginBottom: 32, letterSpacing: "0.06em",
         }}>
-          {filter === "all" ? "All Objects" : filter === "trading" ? "In Trading" : "Not in Trading"}
+          {mainTitle}
           <span style={{ color: "rgba(255,255,255,0.22)", marginLeft: 10, fontSize: "0.85rem" }}>
-            ({counts[filter]})
+            ({filter === "renders" ? renders.length : counts[filter]})
           </span>
         </h1>
 
-        {filtered.length === 0 ? (
-          <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: "italic" }}>
-            No models here
-          </p>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 18 }}>
-            {filtered.map((model) => (
-              <div
-                key={model.key}
-                onClick={() => router.push(`/lobby/objectViewPage?key=${encodeURIComponent(model.key)}`)}
-                style={{
-                  borderRadius: 2, overflow: "hidden", background: "#111",
-                  border: model.isTrading
-                    ? "1px solid rgba(212,175,55,0.25)"
-                    : "1px solid rgba(255,255,255,0.06)",
-                  cursor: "pointer", transition: "border-color 0.22s",
-                  position: "relative",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = model.isTrading
-                    ? "rgb(212,175,55)"
-                    : "rgba(255,255,255,0.25)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = model.isTrading
-                    ? "rgba(212,175,55,0.25)"
-                    : "rgba(255,255,255,0.06)";
-                }}
-              >
-                {model.isTrading && (
-                  <div style={{
-                    position: "absolute", top: 8, right: 8, zIndex: 2,
-                    background: "rgba(212,175,55,0.12)",
-                    border: "1px solid rgba(212,175,55,0.45)",
-                    borderRadius: 2, padding: "2px 7px",
-                    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.62rem",
-                    color: "rgb(212,175,55)", letterSpacing: "0.06em",
-                    pointerEvents: "none",
-                  }}>
-                    trading
-                  </div>
-                )}
+        {/* ── Renders Grid ── */}
+        {filter === "renders" && (
+          <>
+            {loadingRenders ? (
+              <p style={{ color: "rgba(255,255,255,0.3)", fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                Loading renders…
+              </p>
+            ) : renders.length === 0 ? (
+              <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: "italic" }}>
+                No renders yet
+              </p>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                gap: 14,
+              }}>
+                {renders.map((img) => (
+                  <div
+                    key={img.id}
+                    onClick={() => setLightboxImg(img)}
+                    style={{
+                      position: "relative",
+                      borderRadius: 2,
+                      overflow: "hidden",
+                      background: "#111",
+                      border: "1px solid rgba(212,175,55,0.15)",
+                      cursor: "zoom-in",
+                      transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease",
+                      aspectRatio: "1 / 1",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "scale(1.035)";
+                      e.currentTarget.style.borderColor = "rgba(212,175,55,0.55)";
+                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.5)";
+                      const btn = e.currentTarget.querySelector<HTMLButtonElement>(".delete-btn");
+                      if (btn) btn.style.opacity = "1";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.borderColor = "rgba(212,175,55,0.15)";
+                      e.currentTarget.style.boxShadow = "none";
+                      const btn = e.currentTarget.querySelector<HTMLButtonElement>(".delete-btn");
+                      if (btn) btn.style.opacity = "0";
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.url}
+                      alt="render"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
 
-                <div
-                  ref={(el) => { if (el) containerRefs.current.set(model.key, el); }}
-                  style={{ width: "100%", height: 220, background: "#0e0e0e", position: "relative" }}
-                >
-                  {loadingModels[model.key] && (
+                    {/* Delete button */}
+                    <button
+                      className="delete-btn"
+                      onClick={(e) => handleDeleteRender(img, e)}
+                      disabled={deletingId === img.id}
+                      style={{
+                        position: "absolute", top: 7, right: 7,
+                        opacity: 0,
+                        transition: "opacity 0.18s ease",
+                        background: "rgba(10,10,10,0.82)",
+                        border: "1px solid rgba(255,80,80,0.35)",
+                        borderRadius: 2,
+                        color: deletingId === img.id ? "rgba(255,80,80,0.4)" : "rgba(255,80,80,0.85)",
+                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                        fontSize: "0.7rem",
+                        padding: "3px 9px",
+                        cursor: deletingId === img.id ? "default" : "pointer",
+                        letterSpacing: "0.05em",
+                        backdropFilter: "blur(4px)",
+                        zIndex: 3,
+                      }}
+                    >
+                      {deletingId === img.id ? "…" : "delete"}
+                    </button>
+
+                    {/* Date label */}
                     <div style={{
-                      position: "absolute", inset: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      color: "rgba(255,255,255,0.2)",
-                      fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem",
+                      position: "absolute", bottom: 0, left: 0, right: 0,
+                      padding: "18px 10px 8px",
+                      background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: "0.63rem",
+                      color: "rgba(255,255,255,0.3)",
+                      pointerEvents: "none",
                     }}>
-                      Loading…
+                      {new Date(img.createdAt).toLocaleDateString("cs-CZ", {
+                        day: "2-digit", month: "2-digit", year: "numeric",
+                      })}
                     </div>
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
+        )}
+
+        {/* ── Models Grid ── */}
+        {filter !== "renders" && (
+          <>
+            {filtered.length === 0 ? (
+              <p style={{ color: "rgba(255,255,255,0.18)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: "italic" }}>
+                No models here
+              </p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 18 }}>
+                {filtered.map((model) => (
+                  <div
+                    key={model.key}
+                    onClick={() => router.push(`/lobby/objectViewPage?key=${encodeURIComponent(model.key)}`)}
+                    style={{
+                      borderRadius: 2, overflow: "hidden", background: "#111",
+                      border: model.isTrading
+                        ? "1px solid rgba(212,175,55,0.25)"
+                        : "1px solid rgba(255,255,255,0.06)",
+                      cursor: "pointer", transition: "border-color 0.22s",
+                      position: "relative",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = model.isTrading
+                        ? "rgb(212,175,55)"
+                        : "rgba(255,255,255,0.25)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = model.isTrading
+                        ? "rgba(212,175,55,0.25)"
+                        : "rgba(255,255,255,0.06)";
+                    }}
+                  >
+                    {model.isTrading && (
+                      <div style={{
+                        position: "absolute", top: 8, right: 8, zIndex: 2,
+                        background: "rgba(212,175,55,0.12)",
+                        border: "1px solid rgba(212,175,55,0.45)",
+                        borderRadius: 2, padding: "2px 7px",
+                        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.62rem",
+                        color: "rgb(212,175,55)", letterSpacing: "0.06em",
+                        pointerEvents: "none",
+                      }}>
+                        trading
+                      </div>
+                    )}
+
+                    <div
+                      ref={(el) => { if (el) containerRefs.current.set(model.key, el); }}
+                      style={{ width: "100%", height: 220, background: "#0e0e0e", position: "relative" }}
+                    >
+                      {loadingModels[model.key] && (
+                        <div style={{
+                          position: "absolute", inset: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: "rgba(255,255,255,0.2)",
+                          fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem",
+                        }}>
+                          Loading…
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
+
+      {/* ── Lightbox ── */}
+      {lightboxImg && (
+        <div
+          onClick={() => setLightboxImg(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 100,
+            background: "rgba(0,0,0,0.88)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backdropFilter: "blur(8px)",
+            cursor: "zoom-out",
+            animation: "fadeIn 0.18s ease",
+          }}
+        >
+          <style>{`@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }`}</style>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              maxWidth: "min(90vw, 900px)",
+              maxHeight: "88vh",
+              borderRadius: 2,
+              overflow: "hidden",
+              border: "1px solid rgba(212,175,55,0.25)",
+              boxShadow: "0 24px 80px rgba(0,0,0,0.8)",
+              animation: "scaleIn 0.18s ease",
+            }}
+          >
+            <style>{`@keyframes scaleIn { from { transform: scale(0.94); opacity: 0 } to { transform: scale(1); opacity: 1 } }`}</style>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxImg.url}
+              alt="render"
+              style={{ display: "block", maxWidth: "100%", maxHeight: "88vh", objectFit: "contain" }}
+            />
+            {/* Top bar */}
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0,
+              padding: "10px 14px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: "linear-gradient(rgba(0,0,0,0.7), transparent)",
+            }}>
+              <span style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: "0.7rem", color: "rgba(255,255,255,0.35)",
+              }}>
+                {new Date(lightboxImg.createdAt).toLocaleDateString("cs-CZ", {
+                  day: "2-digit", month: "long", year: "numeric",
+                })}
+              </span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={(e) => handleDeleteRender(lightboxImg, e)}
+                  disabled={deletingId === lightboxImg.id}
+                  style={{
+                    background: "rgba(10,10,10,0.7)",
+                    border: "1px solid rgba(255,80,80,0.35)",
+                    borderRadius: 2,
+                    color: "rgba(255,80,80,0.8)",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "0.7rem", padding: "3px 10px",
+                    cursor: "pointer", letterSpacing: "0.05em",
+                  }}
+                >
+                  {deletingId === lightboxImg.id ? "deleting…" : "delete"}
+                </button>
+                <button
+                  onClick={() => setLightboxImg(null)}
+                  style={{
+                    background: "rgba(10,10,10,0.7)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: 2,
+                    color: "rgba(255,255,255,0.5)",
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "0.7rem", padding: "3px 10px",
+                    cursor: "pointer",
+                  }}
+                >
+                  close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
