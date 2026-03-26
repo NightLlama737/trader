@@ -66,6 +66,8 @@ model Purchase {
   offModelId String
   status     String   @default("PENDING")
   buyerSeen  Boolean  @default(true)
+  sellerSeen  Boolean  @default(true)
+
   createdAt  DateTime @default(now())
   buyer      User     @relation("Buyer", fields: [buyerId], references: [id])
   seller     User     @relation("Seller", fields: [sellerId], references: [id])

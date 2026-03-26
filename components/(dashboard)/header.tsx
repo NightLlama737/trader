@@ -54,12 +54,12 @@ export default function Header({ nickname }: { nickname?: string }) {
     <>
       {/* Nav buttons */}
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "4px" }}>
-        <button className="btn-ghost" onClick={() => router.push("/dashboard")}>
+        <button className="btn-ghost" onClick={() => router.push("/lobby")}>
           <h1 style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontSize: "1rem", letterSpacing: "0.16em", textTransform: "uppercase",
             color: "rgba(245,240,232,0.6)", marginBottom: 16,
-          }}>Trading</h1>
+          }}>My models</h1>
         </button>
       </div>
 

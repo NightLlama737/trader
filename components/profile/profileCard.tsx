@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import FriendsList from "../friendsList";
 
 type User = { id: string; nickname: string; email: string };
 type OffModel = {
@@ -25,6 +26,7 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
   const [activeTab, setActiveTab] = useState<Tab>("models");
   const [myId, setMyId] = useState<string | null>(null);
   const [friendStatus, setFriendStatus] = useState<FriendStatus>("none");
+  const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
 
   useEffect(() => {
@@ -58,13 +60,16 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
     if (!user || !myId || user.id === myId) return;
     fetch(`/api/friends?checkId=${user.id}`)
       .then((r) => r.json())
-      .then((d: { status?: string; direction?: string }) => {
+      .then((d: { status?: string; direction?: string; id?: string }) => {
         if (!d.status || d.status === "none") {
           setFriendStatus("none");
+          setFriendshipId(null);
         } else if (d.status === "ACCEPTED") {
           setFriendStatus("accepted");
+          setFriendshipId(d.id ?? null);
         } else if (d.status === "PENDING") {
           setFriendStatus(d.direction === "sent" ? "pending_sent" : "pending_received");
+          setFriendshipId(d.id ?? null);
         }
       })
       .catch(() => {});
@@ -105,11 +110,28 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
 
       if (res.ok) {
         setFriendStatus("pending_sent");
+        setFriendshipId(data.friend?.id ?? null);
       } else if (res.status === 409) {
-        // Sync to whatever the server says already exists
         const existing = data.existingStatus as string | undefined;
         if (existing === "ACCEPTED") setFriendStatus("accepted");
         else setFriendStatus("pending_sent");
+      }
+    } catch {}
+    setFriendLoading(false);
+  };
+
+  const unfriend = async () => {
+    if (!friendshipId || friendLoading) return;
+    setFriendLoading(true);
+    try {
+      const res = await fetch("/api/friends", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ friendId: friendshipId }),
+      });
+      if (res.ok) {
+        setFriendStatus("none");
+        setFriendshipId(null);
       }
     } catch {}
     setFriendLoading(false);
@@ -144,8 +166,16 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
     }
   };
 
-  const friendBtnDisabled =
-    friendLoading || friendStatus === "accepted" || friendStatus === "pending_sent";
+  // Button is disabled only for pending_sent; accepted now triggers unfriend
+  const friendBtnDisabled = friendLoading || friendStatus === "pending_sent";
+
+  const handleFriendBtn = () => {
+    if (friendStatus === "accepted") {
+      unfriend();
+    } else {
+      sendFriendRequest();
+    }
+  };
 
   return (
     <div style={S.page}>
@@ -159,9 +189,10 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
           {!isOwnProfile && (
             <>
               <ActionBtn
-                onClick={sendFriendRequest}
+                onClick={handleFriendBtn}
                 label={friendBtnLabel()}
                 disabled={friendBtnDisabled}
+                danger={friendStatus === "accepted"}
               />
               <ActionBtn
                 onClick={() => router.push(`/profile/${encodeURIComponent(nickname)}/sendModel`)}
@@ -170,7 +201,13 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
             </>
           )}
           {isOwnProfile && (
-            <ActionBtn onClick={() => router.push("/settings")} label="⚙ Settings" />
+            <>
+             <ActionBtn onClick={() => router.push("/settings")} label="⚙ Settings" />
+            <FriendsList />
+
+            </>
+           
+
           )}
           <button style={S.backBtn} onClick={() => router.back()}>← Back</button>
         </div>
@@ -222,15 +259,32 @@ function TabButton({ label, count, active, onClick }: { label: string; count: nu
   );
 }
 
-function ActionBtn({ onClick, label, disabled }: { onClick: () => void; label: string; disabled?: boolean }) {
+function ActionBtn({ onClick, label, disabled, danger }: { onClick: () => void; label: string; disabled?: boolean; danger?: boolean }) {
   const [hovered, setHovered] = useState(false);
+
+  const borderColor = () => {
+    if (disabled) return "rgba(255,255,255,0.08)";
+    if (danger && hovered) return "rgba(210,90,90,0.6)";
+    if (danger) return "rgba(210,90,90,0.3)";
+    if (hovered) return "rgb(212,175,55)";
+    return "rgba(245,240,232,0.18)";
+  };
+
+  const textColor = () => {
+    if (disabled) return "rgba(245,240,232,0.25)";
+    if (danger && hovered) return "#ff9090";
+    if (danger) return "rgba(210,90,90,0.7)";
+    if (hovered) return "#fff";
+    return "rgba(245,240,232,0.65)";
+  };
+
   return (
     <button
       style={{
         width: "100%", background: "transparent",
-        border: `1px solid ${disabled ? "rgba(255,255,255,0.08)" : hovered ? "rgb(212,175,55)" : "rgba(245,240,232,0.18)"}`,
+        border: `1px solid ${borderColor()}`,
         borderRadius: 2,
-        color: disabled ? "rgba(245,240,232,0.25)" : hovered ? "#fff" : "rgba(245,240,232,0.65)",
+        color: textColor(),
         fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.9rem",
         letterSpacing: "0.06em", padding: "9px 18px",
         cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s",

@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
     if (!addresseeId) return NextResponse.json({ error: "Missing addresseeId" }, { status: 400 });
     if (addresseeId === userId) return NextResponse.json({ error: "Cannot friend yourself" }, { status: 400 });
 
-    // Check if already exists in either direction
     const existing = await prisma.friend.findFirst({
       where: {
         OR: [
@@ -25,7 +24,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing) {
-      // Return the existing status so the client can sync its UI
       return NextResponse.json(
         { error: "Already exists", existingStatus: existing.status },
         { status: 409 }
@@ -54,7 +52,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const checkId = searchParams.get("checkId");
 
-    // If checkId provided, return the friendship status with that user
     if (checkId) {
       const record = await prisma.friend.findFirst({
         where: {
@@ -67,12 +64,10 @@ export async function GET(req: NextRequest) {
 
       if (!record) return NextResponse.json({ status: "none" });
 
-      // Determine direction so client knows if they sent or received
       const direction = record.requesterId === userId ? "sent" : "received";
       return NextResponse.json({ status: record.status, direction, id: record.id });
     }
 
-    // Otherwise return full friends list (accepted only)
     const friends = await prisma.friend.findMany({
       where: {
         OR: [
@@ -96,5 +91,30 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("GET FRIENDS ERROR:", err);
     return NextResponse.json({ friends: [] });
+  }
+}
+
+// DELETE /api/friends - remove friendship (unfriend)
+export async function DELETE(req: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const cookie = cookieStore.get("user")?.value;
+    const userId = cookie ? JSON.parse(cookie).id : null;
+    if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+    const { friendId } = await req.json();
+    if (!friendId) return NextResponse.json({ error: "Missing friendId" }, { status: 400 });
+
+    const record = await prisma.friend.findUnique({ where: { id: friendId } });
+    if (!record || (record.requesterId !== userId && record.addresseeId !== userId)) {
+      return NextResponse.json({ error: "Not found or unauthorized" }, { status: 404 });
+    }
+
+    await prisma.friend.delete({ where: { id: friendId } });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE FRIEND ERROR:", err);
+    return NextResponse.json({ error: "Failed to remove friend" }, { status: 500 });
   }
 }

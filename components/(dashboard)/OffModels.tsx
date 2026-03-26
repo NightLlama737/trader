@@ -180,7 +180,6 @@ export default function OffModels() {
         )}
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "14px 0" }} />
-        <FriendsList />
       </aside>
 
       {/* ── Main grid ── */}
