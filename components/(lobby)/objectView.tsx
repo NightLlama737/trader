@@ -160,7 +160,7 @@ export default function ObjectView() {
           <div
             ref={mountRef}
             style={{
-              width: "1400px", height: "700px",
+              width: "1200px", height: "600px",
               background: "#0e0e0e",
               borderRadius: 2,
               overflow: "hidden",
