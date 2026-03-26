@@ -122,5 +122,5 @@ model ModelGift {
   createdAt       DateTime @default(now())
   sender          User     @relation("Sender", fields: [senderId], references: [id])
   receiver        User     @relation("Receiver", fields: [receiverId], references: [id])
-  model           Model    @relation(fields: [modelId], references: [id])
+  model   Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
 }
