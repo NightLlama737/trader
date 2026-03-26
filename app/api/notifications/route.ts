@@ -146,6 +146,25 @@ export async function GET() {
       });
     }
 
+    // 5. Friend removed notifications (from Notification table)
+    try {
+      const friendRemovedNotifs = await (prisma as any).notification.findMany({
+        where: { userId, type: "friend_removed", seen: false },
+        orderBy: { createdAt: "desc" },
+      });
+
+      for (const n of friendRemovedNotifs) {
+        notifications.push({
+          id: `notif-${n.id}`,
+          type: "friend_removed",
+          data: n.data,
+          createdAt: n.createdAt,
+        });
+      }
+    } catch {
+      // Notification table may not exist yet — silently skip
+    }
+
     // Sort all by date descending
     notifications.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

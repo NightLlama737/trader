@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// DELETE /api/friends - remove friendship (unfriend)
+// DELETE /api/friends - remove friendship (unfriend) + notify the other party
 export async function DELETE(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -105,12 +105,39 @@ export async function DELETE(req: NextRequest) {
     const { friendId } = await req.json();
     if (!friendId) return NextResponse.json({ error: "Missing friendId" }, { status: 400 });
 
-    const record = await prisma.friend.findUnique({ where: { id: friendId } });
+    const record = await prisma.friend.findUnique({
+      where: { id: friendId },
+      include: {
+        requester: { select: { id: true, nickname: true } },
+        addressee: { select: { id: true, nickname: true } },
+      },
+    });
+
     if (!record || (record.requesterId !== userId && record.addresseeId !== userId)) {
       return NextResponse.json({ error: "Not found or unauthorized" }, { status: 404 });
     }
 
+    // Determine who is the other party
+    const removedBy = record.requesterId === userId ? record.requester : record.addressee;
+    const otherUser = record.requesterId === userId ? record.addressee : record.requester;
+
     await prisma.friend.delete({ where: { id: friendId } });
+
+    // Store unfriend notification for the other user (if the table exists)
+    try {
+      await (prisma as any).notification.create({
+        data: {
+          userId: otherUser.id,
+          type: "friend_removed",
+          data: {
+            removedBy: { id: removedBy.id, nickname: removedBy.nickname },
+          },
+          seen: false,
+        },
+      });
+    } catch {
+      // Notification table may not exist yet — silently skip
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

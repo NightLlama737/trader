@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useRouter } from "next/navigation";
-import FriendsList from "../friendsList";
 
 type Category = { id: string; name: string };
 type Model = {

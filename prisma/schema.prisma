@@ -24,6 +24,7 @@ model User {
   receivedGifts   ModelGift[]     @relation("Receiver")
   purchases       Purchase[]      @relation("Buyer")
   sales           Purchase[]      @relation("Seller")
+  notifications   Notification[]
 }
 
 model Model {
@@ -66,8 +67,7 @@ model Purchase {
   offModelId String
   status     String   @default("PENDING")
   buyerSeen  Boolean  @default(true)
-  sellerSeen  Boolean  @default(true)
-
+  sellerSeen Boolean  @default(true)
   createdAt  DateTime @default(now())
   buyer      User     @relation("Buyer", fields: [buyerId], references: [id])
   seller     User     @relation("Seller", fields: [sellerId], references: [id])
@@ -79,6 +79,16 @@ model RenderedImage {
   userId    String
   key       String   @unique
   title     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  data      Json
+  seen      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }

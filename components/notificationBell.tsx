@@ -4,12 +4,11 @@ import { useState, useEffect, useRef } from "react";
 
 type Notification = {
   id: string;
-  type: "friend_request" | "model_gift" | "purchase_request" | "purchase_update" | "gift_received_confirmation";
+  type: "friend_request" | "model_gift" | "purchase_request" | "purchase_update" | "gift_received_confirmation" | "friend_removed";
   data: Record<string, unknown>;
   createdAt: string;
 };
 
-// Safe helper to read a string field from an unknown nested object
 const getStr = (obj: unknown, key: string): string => {
   if (obj && typeof obj === "object") {
     const val = (obj as Record<string, unknown>)[key];
@@ -24,19 +23,6 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-
-  const handlePurchaseSeenAction = async (id: string) => {
-    setLoading(true);
-    try {
-        await fetch("/api/notifications/seen", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: "sale_confirmation", id }),
-        });
-        await fetchNotifications();
-    } catch {}
-    setLoading(false);
-  }
   const fetchNotifications = async () => {
     try {
       const res = await fetch("/api/notifications");
@@ -85,6 +71,19 @@ export default function NotificationBell() {
     setLoading(false);
   };
 
+  const handlePurchaseSeenAction = async (id: string) => {
+    setLoading(true);
+    try {
+      await fetch("/api/notifications/seen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "sale_confirmation", id }),
+      });
+      await fetchNotifications();
+    } catch {}
+    setLoading(false);
+  };
+
   const handleAcceptGift = async (giftId: string) => {
     setLoading(true);
     try {
@@ -107,6 +106,17 @@ export default function NotificationBell() {
     await fetchNotifications();
   };
 
+  const handleDismissFriendRemoved = async (notifId: string) => {
+    // notifId is like "notif-<uuid>", strip prefix
+    const rawId = notifId.replace("notif-", "");
+    await fetch("/api/notifications/seen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "friend_removed", id: rawId }),
+    });
+    await fetchNotifications();
+  };
+
   const count = notifications.length;
 
   const renderNotification = (n: Notification) => {
@@ -125,6 +135,29 @@ export default function NotificationBell() {
             <div style={styles.notifActions}>
               <button style={styles.btnAccept} disabled={loading} onClick={() => handleFriendAction(friendId, "accept")}>Accept</button>
               <button style={styles.btnDecline} disabled={loading} onClick={() => handleFriendAction(friendId, "decline")}>Decline</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (n.type === "friend_removed") {
+      return (
+        <div key={n.id} style={styles.notifItem}>
+          <div style={styles.notifIcon}>💔</div>
+          <div style={{ flex: 1 }}>
+            <p style={styles.notifText}>
+              <span style={styles.notifName}>{getStr(d.removedBy, "nickname")}</span>{" "}
+              removed you from their friends
+            </p>
+            <div style={styles.notifActions}>
+              <button
+                style={styles.btnDecline}
+                disabled={loading}
+                onClick={() => handleDismissFriendRemoved(n.id)}
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </div>
@@ -175,6 +208,7 @@ export default function NotificationBell() {
 
     if (n.type === "purchase_update") {
       const accepted = d.status === "ACCEPTED";
+      const purchaseId = n.id.replace("purchase-update-", "");
       return (
         <div key={n.id} style={styles.notifItem}>
           <div style={styles.notifIcon}>{accepted ? "✅" : "❌"}</div>
@@ -185,9 +219,11 @@ export default function NotificationBell() {
               was {accepted ? "accepted" : "declined"} by{" "}
               <span style={styles.notifName}>{getStr(d.seller, "nickname")}</span>
             </p>
-             <div style={styles.notifActions}>
-              <button style={styles.btnAccept} disabled={loading} onClick={() => handlePurchaseSeenAction()}>Confirm Sale</button>
-              </div>
+            <div style={styles.notifActions}>
+              <button style={styles.btnAccept} disabled={loading} onClick={() => handlePurchaseSeenAction(purchaseId)}>
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       );

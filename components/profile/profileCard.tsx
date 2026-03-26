@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import FriendsList from "../friendsList";
 
 type User = { id: string; nickname: string; email: string };
@@ -11,7 +13,6 @@ type OffModel = {
 };
 type RenderedImage = { id: string; key: string; title: string | null; url: string; createdAt: string };
 type Tab = "models" | "renders";
-// none = no relationship, pending_sent = I sent, pending_received = they sent to me, accepted = friends
 type FriendStatus = "none" | "pending_sent" | "pending_received" | "accepted";
 
 export default function ProfileCard({ nickname }: { nickname: string }) {
@@ -29,6 +30,10 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
 
+  // Three.js refs for model cards
+  const containerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     fetch("/api/getUserId")
       .then((r) => r.json())
@@ -36,7 +41,6 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
       .catch(() => {});
   }, []);
 
-  // Fetch target user
   useEffect(() => {
     if (!nickname) return;
     setLoading(true);
@@ -55,7 +59,6 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
       .finally(() => setLoading(false));
   }, [nickname]);
 
-  // Check friendship status once we know both user IDs
   useEffect(() => {
     if (!user || !myId || user.id === myId) return;
     fetch(`/api/friends?checkId=${user.id}`)
@@ -75,18 +78,22 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
       .catch(() => {});
   }, [user, myId]);
 
-  // Fetch listed models
   useEffect(() => {
     if (!user) return;
     setModelsLoading(true);
     fetch("/api/getOffModels")
       .then((r) => r.json())
-      .then((d) => setModels((d.models || []).filter((m: OffModel) => m.userId === user.id)))
+      .then((d) => {
+        const filtered: OffModel[] = (d.models || []).filter((m: OffModel) => m.userId === user.id);
+        setModels(filtered);
+        const init: Record<string, boolean> = {};
+        filtered.forEach((m) => { init[m.key] = true; });
+        setLoadingModels(init);
+      })
       .catch(console.error)
       .finally(() => setModelsLoading(false));
   }, [user]);
 
-  // Fetch renders
   useEffect(() => {
     if (!user) return;
     setRendersLoading(true);
@@ -96,6 +103,65 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
       .catch(console.error)
       .finally(() => setRendersLoading(false));
   }, [user]);
+
+  // Three.js rendering for model cards (same as OffModels)
+  useEffect(() => {
+    if (activeTab !== "models" || !models.length) return;
+
+    const loader = new GLTFLoader();
+    const renderers: THREE.WebGLRenderer[] = [];
+
+    models.forEach((model) => {
+      const container = containerRefs.current.get(model.key);
+      if (!container) return;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0e0e0e);
+      const w = container.clientWidth || 240;
+      const h = container.clientHeight || 200;
+      const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+      camera.position.z = 5;
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      if (!container.contains(renderer.domElement)) container.appendChild(renderer.domElement);
+      renderers.push(renderer);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+      const light = new THREE.DirectionalLight(0xffffff, 8);
+      light.position.set(5, 5, 5);
+      scene.add(light);
+
+      fetch(`/api/getSignedUrl?key=${encodeURIComponent(model.key)}`)
+        .then((r) => r.json())
+        .then(({ url }) => {
+          loader.load(
+            url,
+            (gltf) => {
+              const obj = gltf.scene;
+              scene.add(obj);
+              const box = new THREE.Box3().setFromObject(obj);
+              obj.position.sub(box.getCenter(new THREE.Vector3()));
+              obj.rotation.y = Math.PI * 1.5;
+              const size = box.getSize(new THREE.Vector3());
+              const maxDim = Math.max(size.x, size.y, size.z);
+              const fov = camera.fov * (Math.PI / 180);
+              const cameraZ = Math.abs(maxDim / Math.sin(fov / 2)) * 0.8;
+              camera.position.set(0, 0, cameraZ);
+              camera.near = cameraZ / 100;
+              camera.far = cameraZ * 100;
+              camera.updateProjectionMatrix();
+              renderer.render(scene, camera);
+              setLoadingModels((prev) => ({ ...prev, [model.key]: false }));
+            },
+            undefined,
+            () => setLoadingModels((prev) => ({ ...prev, [model.key]: false }))
+          );
+        })
+        .catch(() => setLoadingModels((prev) => ({ ...prev, [model.key]: false })));
+    });
+
+    return () => { renderers.forEach((r) => r.dispose()); };
+  }, [models, activeTab]);
 
   const sendFriendRequest = async () => {
     if (!user || friendLoading) return;
@@ -107,7 +173,6 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
         body: JSON.stringify({ addresseeId: user.id }),
       });
       const data = await res.json();
-
       if (res.ok) {
         setFriendStatus("pending_sent");
         setFriendshipId(data.friend?.id ?? null);
@@ -166,7 +231,6 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
     }
   };
 
-  // Button is disabled only for pending_sent; accepted now triggers unfriend
   const friendBtnDisabled = friendLoading || friendStatus === "pending_sent";
 
   const handleFriendBtn = () => {
@@ -202,12 +266,9 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
           )}
           {isOwnProfile && (
             <>
-             <ActionBtn onClick={() => router.push("/settings")} label="⚙ Settings" />
-            <FriendsList />
-
+              <ActionBtn onClick={() => router.push("/settings")} label="⚙ Settings" />
+              <FriendsList />
             </>
-           
-
           )}
           <button style={S.backBtn} onClick={() => router.back()}>← Back</button>
         </div>
@@ -223,7 +284,72 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
         {activeTab === "models" && (
           modelsLoading ? <p style={S.muted}>Loading…</p> :
           models.length === 0 ? <p style={S.muted}>No models listed for trading.</p> :
-          <div style={S.grid}>{models.map((m) => <ModelCard key={m.key} model={m} />)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 18 }}>
+            {models.map((model) => (
+              <div
+                key={model.key}
+                style={{
+                  borderRadius: 2, overflow: "hidden", background: "#111",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  display: "flex", flexDirection: "column",
+                  transition: "border-color 0.22s",
+                  cursor: "default",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgb(212,175,55)")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")}
+              >
+                {/* Three.js canvas container */}
+                <div
+                  ref={(el) => { if (el) containerRefs.current.set(model.key, el); }}
+                  style={{ width: "100%", height: 200, background: "#0e0e0e", position: "relative" }}
+                >
+                  {loadingModels[model.key] && (
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "rgba(255,255,255,0.2)",
+                      fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem",
+                    }}>
+                      Loading…
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div style={{ padding: "13px 15px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <p style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "0.88rem", color: "#f5f0e8",
+                    marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}>
+                    {model.name}
+                  </p>
+                  <p style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "0.75rem", color: "rgba(245,240,232,0.3)",
+                    marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}>
+                    {model.description}
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.88rem", color: "rgba(245,240,232,0.6)" }}>
+                      {model.price} €
+                    </span>
+                    {model.category && (
+                      <span style={{
+                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                        fontSize: "0.62rem", color: "rgba(255,255,255,0.22)",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: 2, padding: "2px 7px", letterSpacing: "0.05em",
+                      }}>
+                        {model.category.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {activeTab === "renders" && (
@@ -299,34 +425,6 @@ function ActionBtn({ onClick, label, disabled, danger }: { onClick: () => void; 
   );
 }
 
-function ModelCard({ model }: { model: OffModel }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      style={{
-        borderRadius: 2, overflow: "hidden", background: "#111",
-        border: `1px solid ${hovered ? "rgba(212,175,55,0.5)" : "rgba(255,255,255,0.06)"}`,
-        display: "flex", flexDirection: "column", transition: "border-color 0.2s",
-      }}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-    >
-      <div style={{ width: "100%", height: 130, background: "#0e0e0e", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: "2rem", color: "rgba(255,255,255,0.07)" }}>◈</span>
-      </div>
-      <div style={{ padding: "11px 13px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 4 }}>
-        <p style={{ margin: 0, fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.92rem", color: "#f5f0e8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{model.name}</p>
-        <p style={{ margin: 0, fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.76rem", color: "rgba(245,240,232,0.28)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{model.description}</p>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3 }}>
-          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.8rem", color: "rgba(245,240,232,0.5)" }}>{model.price} €</span>
-          {model.category && (
-            <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.58rem", color: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 2, padding: "1px 6px", letterSpacing: "0.04em" }}>{model.category.name}</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function RenderCard({ image }: { image: RenderedImage }) {
   const [hovered, setHovered] = useState(false);
   const [lightbox, setLightbox] = useState(false);
@@ -378,6 +476,5 @@ const S: Record<string, React.CSSProperties> = {
   notFoundSub:  { margin: 0, color: "rgba(255,255,255,0.3)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.78rem", textAlign: "center" },
   spinner:      { width: 28, height: 28, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.06)", borderTop: "2px solid rgba(255,255,255,0.3)", animation: "spin 0.7s linear infinite" },
   muted:        { color: "rgba(255,255,255,0.2)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: "italic", fontSize: "0.95rem" },
-  grid:         { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 14 },
   renderGrid:   { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 },
 };

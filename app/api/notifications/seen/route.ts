@@ -26,6 +26,12 @@ export async function POST(req: NextRequest) {
         where: { id, sellerId: userId },
         data: { sellerSeen: true },
       }).catch(() => {});
+    } else if (type === "friend_removed") {
+      // id here is the Notification record id (without "notif-" prefix)
+      await (prisma as any).notification.updateMany({
+        where: { id, userId },
+        data: { seen: true },
+      }).catch(() => {});
     }
 
     return NextResponse.json({ ok: true });
