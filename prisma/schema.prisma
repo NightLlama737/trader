@@ -71,7 +71,7 @@ model Purchase {
   createdAt  DateTime @default(now())
   buyer      User     @relation("Buyer", fields: [buyerId], references: [id])
   seller     User     @relation("Seller", fields: [sellerId], references: [id])
-  offModel   OffModel @relation(fields: [offModelId], references: [id])
+  offModel   OffModel @relation(fields: [offModelId], references: [id], onDelete: Cascade)
 }
 
 model RenderedImage {
