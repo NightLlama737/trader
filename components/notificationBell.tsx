@@ -21,6 +21,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [giftAccepting, setGiftAccepting] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
@@ -84,17 +85,62 @@ export default function NotificationBell() {
     setLoading(false);
   };
 
-  const handleAcceptGift = async (giftId: string) => {
-    setLoading(true);
+  // Accept gift: fetch source file from S3, upload under current user's folder, confirm in DB
+  const handleAcceptGift = async (giftId: string, modelKey: string) => {
+    setGiftAccepting(giftId);
     try {
-      await fetch("/api/giftModel/accept", {
+      // 1. Get a signed URL to read the source file
+      const srcRes = await fetch(`/api/getSignedUrl?key=${encodeURIComponent(modelKey)}`);
+      const { url: sourceUrl } = await srcRes.json();
+      if (!sourceUrl) throw new Error("Could not get source URL");
+
+      // 2. Download the source file
+      const fileRes = await fetch(sourceUrl);
+      if (!fileRes.ok) throw new Error("Failed to download gift file");
+      const blob = await fileRes.blob();
+      const contentType = blob.type || "model/gltf-binary";
+
+      // 3. Build destination key under current user's folder
+      const myRes = await fetch("/api/getUserId");
+      const { userId } = await myRes.json();
+      if (!userId) throw new Error("Not authenticated");
+
+      const fileName = modelKey.split("/").pop() || `${crypto.randomUUID()}.glb`;
+      const destKey = `models/${userId}/${crypto.randomUUID()}-${fileName}`;
+
+      // 4. Get presigned PUT URL
+      const putRes = await fetch("/api/getUploadUrl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ giftId }),
+        body: JSON.stringify({ key: destKey, contentType }),
       });
+      const { uploadUrl } = await putRes.json();
+      if (!uploadUrl) throw new Error("Failed to get upload URL");
+
+      // 5. Upload to S3
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: blob,
+      });
+      if (!uploadRes.ok) throw new Error("S3 upload failed");
+
+      // 6. Confirm – creates Model record in DB and marks gift seen
+      const confirmRes = await fetch("/api/giftModel/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ giftId, destKey }),
+      });
+      if (!confirmRes.ok) {
+        const d = await confirmRes.json();
+        throw new Error(d.error || "Confirm failed");
+      }
+
       await fetchNotifications();
-    } catch {}
-    setLoading(false);
+    } catch (err) {
+      console.error("ACCEPT GIFT ERROR:", err);
+    }
+    setGiftAccepting(null);
   };
 
   const handleDismissGift = async (id: string) => {
@@ -107,7 +153,6 @@ export default function NotificationBell() {
   };
 
   const handleDismissFriendRemoved = async (notifId: string) => {
-    // notifId is like "notif-<uuid>", strip prefix
     const rawId = notifId.replace("notif-", "");
     await fetch("/api/notifications/seen", {
       method: "POST",
@@ -151,11 +196,7 @@ export default function NotificationBell() {
               removed you from their friends
             </p>
             <div style={styles.notifActions}>
-              <button
-                style={styles.btnDecline}
-                disabled={loading}
-                onClick={() => handleDismissFriendRemoved(n.id)}
-              >
+              <button style={styles.btnDecline} disabled={loading} onClick={() => handleDismissFriendRemoved(n.id)}>
                 Dismiss
               </button>
             </div>
@@ -166,18 +207,59 @@ export default function NotificationBell() {
 
     if (n.type === "model_gift") {
       const giftId = n.id.replace("gift-", "");
+      const modelKey = getStr(d.model, "key");
       const msg = typeof d.message === "string" ? d.message : undefined;
+      const isAccepting = giftAccepting === giftId;
+
       return (
         <div key={n.id} style={styles.notifItem}>
           <div style={styles.notifIcon}>🎁</div>
           <div style={{ flex: 1 }}>
             <p style={styles.notifText}>
               <span style={styles.notifName}>{getStr(d.sender, "nickname")}</span>{" "}
-              sent you a model{msg ? `: "${msg}"` : ""}
+              sent you a model{msg ? <span style={{ color: "rgba(245,240,232,0.4)", fontStyle: "italic" }}>: "{msg}"</span> : ""}
             </p>
+            {isAccepting && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{
+                  height: 2,
+                  background: "rgba(255,255,255,0.06)",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  marginBottom: 4,
+                }}>
+                  <div style={{
+                    height: "100%",
+                    width: "100%",
+                    background: "rgb(212,175,55)",
+                    animation: "shimmer 1.2s ease-in-out infinite",
+                  }} />
+                </div>
+                <span style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: "0.7rem",
+                  color: "rgba(212,175,55,0.6)",
+                  fontStyle: "italic",
+                }}>
+                  Receiving model…
+                </span>
+              </div>
+            )}
             <div style={styles.notifActions}>
-              <button style={styles.btnAccept} disabled={loading} onClick={() => handleAcceptGift(giftId)}>Accept</button>
-              <button style={styles.btnDecline} disabled={loading} onClick={() => handleDismissGift(giftId)}>Dismiss</button>
+              <button
+                style={styles.btnAccept}
+                disabled={isAccepting || loading}
+                onClick={() => handleAcceptGift(giftId, modelKey)}
+              >
+                {isAccepting ? "Receiving…" : "Accept"}
+              </button>
+              <button
+                style={styles.btnDecline}
+                disabled={isAccepting || loading}
+                onClick={() => handleDismissGift(giftId)}
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </div>
@@ -274,6 +356,12 @@ export default function NotificationBell() {
           border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2,
           zIndex: 9999, boxShadow: "0 12px 40px rgba(0,0,0,0.7)", overflow: "hidden",
         }}>
+          <style>{`
+            @keyframes shimmer {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(100%); }
+            }
+          `}</style>
           <div style={{
             padding: "10px 18px 8px", borderBottom: "1px solid rgba(255,255,255,0.05)",
             fontFamily: "'Cormorant Garamond', Georgia, serif",
@@ -283,7 +371,7 @@ export default function NotificationBell() {
             Notifications {count > 0 && `(${count})`}
           </div>
 
-          <div style={{ maxHeight: 400, overflowY: "auto" }}>
+          <div style={{ maxHeight: 420, overflowY: "auto" }}>
             {notifications.length === 0 ? (
               <p style={{
                 padding: "24px 18px",
@@ -304,11 +392,30 @@ export default function NotificationBell() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  notifItem: { display: "flex", gap: 12, padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.04)", alignItems: "flex-start" },
+  notifItem: {
+    display: "flex", gap: 12, padding: "14px 18px",
+    borderBottom: "1px solid rgba(255,255,255,0.04)", alignItems: "flex-start",
+  },
   notifIcon: { fontSize: "1rem", marginTop: 1, flexShrink: 0 },
-  notifText: { margin: "0 0 8px", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.88rem", color: "rgba(245,240,232,0.6)", lineHeight: 1.5 },
+  notifText: {
+    margin: "0 0 8px",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: "0.88rem", color: "rgba(245,240,232,0.6)", lineHeight: 1.55,
+  },
   notifName: { color: "#f5f0e8", fontWeight: 500 },
   notifActions: { display: "flex", gap: 8 },
-  btnAccept: { fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem", letterSpacing: "0.07em", padding: "4px 12px", background: "transparent", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 2, color: "rgb(212,175,55)", cursor: "pointer", transition: "all 0.2s" },
-  btnDecline: { fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem", letterSpacing: "0.07em", padding: "4px 12px", background: "transparent", border: "1px solid rgba(210,90,90,0.3)", borderRadius: 2, color: "rgba(210,90,90,0.7)", cursor: "pointer", transition: "all 0.2s" },
+  btnAccept: {
+    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem",
+    letterSpacing: "0.07em", padding: "4px 12px",
+    background: "transparent",
+    border: "1px solid rgba(212,175,55,0.4)", borderRadius: 2,
+    color: "rgb(212,175,55)", cursor: "pointer", transition: "all 0.2s",
+  },
+  btnDecline: {
+    fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.75rem",
+    letterSpacing: "0.07em", padding: "4px 12px",
+    background: "transparent",
+    border: "1px solid rgba(210,90,90,0.3)", borderRadius: 2,
+    color: "rgba(210,90,90,0.7)", cursor: "pointer", transition: "all 0.2s",
+  },
 };
