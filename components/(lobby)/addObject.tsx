@@ -24,7 +24,7 @@ export default function AddObject() {
     setProgress(0);
 
     try {
-      // 1. Získání presigned upload URL z API
+      // 1. Get presigned upload URL — server generates the key
       const urlRes = await fetch("/api/getUploadUrl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,7 +41,9 @@ export default function AddObject() {
 
       const { uploadUrl, key } = await urlRes.json();
 
-      // 2. Přímý upload souboru do S3 přes presigned URL (XHR pro progress)
+      if (!key) throw new Error("Server did not return a key");
+
+      // 2. Upload directly to S3 via presigned URL (XHR for progress)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -66,7 +68,7 @@ export default function AddObject() {
         xhr.send(file);
       });
 
-      // 3. Uložení záznamu do databáze
+      // 3. Save record to database
       const saveRes = await fetch("/api/addObject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

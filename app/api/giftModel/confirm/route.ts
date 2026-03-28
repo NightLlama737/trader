@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-// Called by the RECEIVER after they accept the gift and the frontend has uploaded the file
+// Called by the SENDER after uploading the file copy to the receiver's S3 folder.
+// The receiver later just marks the gift as seen via /api/notifications/seen.
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -23,7 +24,8 @@ export async function POST(req: NextRequest) {
       where: { id: giftId },
     });
 
-    if (!gift || gift.receiverId !== userId) {
+    // Only the sender (who uploaded the file) can confirm
+    if (!gift || gift.senderId !== userId) {
       return NextResponse.json({ error: "Not found or unauthorized" }, { status: 404 });
     }
 
@@ -31,24 +33,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Already claimed" }, { status: 409 });
     }
 
-    // Verify the destKey is under receiver's folder
-    if (!destKey.startsWith(`models/${userId}/`)) {
+    // Verify destKey is under the receiver's folder
+    if (!destKey.startsWith(`models/${gift.receiverId}/`)) {
       return NextResponse.json({ error: "Invalid destination key" }, { status: 400 });
     }
 
-    // Create model record for receiver
-    const newModel = await prisma.model.create({
-      data: {
-        userId,
-        key: destKey,
-      },
-    });
+    // Create model record for the RECEIVER (idempotent: skip if key already exists)
+    let newModel;
+    const existing = await prisma.model.findFirst({ where: { key: destKey } });
+    if (!existing) {
+      newModel = await prisma.model.create({
+        data: { userId: gift.receiverId, key: destKey },
+      });
+    } else {
+      newModel = existing;
+    }
 
-    // Mark gift as seen/claimed
-    await prisma.modelGift.update({
-      where: { id: giftId },
-      data: { seen: true },
-    });
+    // Leave gift.seen = false so receiver still gets the bell notification.
+    // Receiver dismisses it via /api/notifications/seen { type: "gift", id: giftId }.
 
     return NextResponse.json({
       ok: true,

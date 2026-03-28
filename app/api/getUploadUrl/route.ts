@@ -3,6 +3,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3 } from "../../../lib/S3";
 import { cookies } from "next/headers";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
@@ -14,10 +15,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { key, contentType } = await req.json();
+    const body = await req.json();
+    const contentType: string | undefined = body.contentType;
 
-    if (!key || !contentType) {
-      return NextResponse.json({ error: "Missing key or contentType" }, { status: 400 });
+    // Accept either a pre-built key or a fileName to build one from
+    let key: string = body.key;
+    if (!key) {
+      const fileName: string | undefined = body.fileName;
+      if (!fileName) {
+        return NextResponse.json({ error: "Missing key or fileName" }, { status: 400 });
+      }
+      const ext = fileName.includes(".") ? fileName.split(".").pop() : "";
+      const uniqueName = `${crypto.randomUUID()}${ext ? "." + ext : ""}`;
+      key = `models/${userId}/${uniqueName}`;
+    }
+
+    if (!contentType) {
+      return NextResponse.json({ error: "Missing contentType" }, { status: 400 });
     }
 
     const command = new PutObjectCommand({
@@ -28,7 +42,7 @@ export async function POST(req: Request) {
 
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
-    return NextResponse.json({ uploadUrl });
+    return NextResponse.json({ uploadUrl, key });
   } catch (err) {
     console.error("GET UPLOAD URL ERROR:", err);
     return NextResponse.json({ error: "Failed to generate upload URL" }, { status: 500 });
