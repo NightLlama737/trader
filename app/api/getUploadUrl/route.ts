@@ -15,19 +15,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { fileName, contentType, prefix = "models" } = await req.json();
+    const { key, contentType } = await req.json();
 
-    if (!fileName || !contentType) {
-      return NextResponse.json({ error: "Missing fileName or contentType" }, { status: 400 });
+    if (!key || !contentType) {
+      return NextResponse.json({ error: "Missing key or contentType" }, { status: 400 });
     }
-
-    // Bezpečnostní kontrola prefixu
-    const allowedPrefixes = ["models", "renders"];
-    const safePrefix = allowedPrefixes.includes(prefix) ? prefix : "models";
-
-    const ext = fileName.split(".").pop() || "bin";
-    const uniqueFileName = `${crypto.randomUUID()}.${ext}`;
-    const key = `${safePrefix}/${userId}/${uniqueFileName}`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET!,
@@ -37,7 +29,7 @@ export async function POST(req: Request) {
 
     const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
-    return NextResponse.json({ uploadUrl, key });
+    return NextResponse.json({ uploadUrl });
   } catch (err) {
     console.error("GET UPLOAD URL ERROR:", err);
     return NextResponse.json({ error: "Failed to generate upload URL" }, { status: 500 });
