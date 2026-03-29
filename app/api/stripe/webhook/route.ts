@@ -8,7 +8,7 @@ import { s3 } from "@/lib/S3";
 import crypto from "crypto";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
+  apiVersion: "2026-03-25.dahlia",
 });
 
 export async function POST(req: NextRequest) {
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.CheckoutSession;
+    const session = event.data.object as Stripe.Checkout.Session;
     const purchaseId = session.metadata?.purchaseId;
 
     if (!purchaseId) {
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === "checkout.session.expired") {
-    const session = event.data.object as Stripe.CheckoutSession;
+    const session = event.data.object as Stripe.Checkout.Session;
     const purchaseId = session.metadata?.purchaseId;
 
     if (purchaseId) {
@@ -106,9 +106,3 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-// Důležité: Stripe webhook potřebuje raw body, ne parsed JSON
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
