@@ -1,3 +1,4 @@
+// app/api/settings/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
@@ -18,7 +19,7 @@ export async function GET() {
         nickname: true,
         createdAt: true,
         credits: true,
-        paymentDetails: true,
+        bankAccount: true,
       },
     });
 
@@ -39,7 +40,7 @@ export async function PUT(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json();
-    const { nickname, email, currentPassword, newPassword, paymentDetails } = body;
+    const { nickname, email, currentPassword, newPassword, bankAccount } = body;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -67,9 +68,10 @@ export async function PUT(req: NextRequest) {
       updateData.password = await bcrypt.hash(newPassword, 10);
     }
 
-    // Update payment details
-    if (paymentDetails) {
-      updateData.paymentDetails = paymentDetails;
+    // Update bank account (IBAN)
+    if ("bankAccount" in body) {
+      // null means clear, string means set
+      updateData.bankAccount = bankAccount ? bankAccount.replace(/\s/g, "").toUpperCase() : null;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -79,7 +81,7 @@ export async function PUT(req: NextRequest) {
     const updated = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, email: true, nickname: true, credits: true },
+      select: { id: true, email: true, nickname: true, credits: true, bankAccount: true },
     });
 
     // Update cookie if nickname changed

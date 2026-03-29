@@ -2,21 +2,13 @@
 
 import { useState, useEffect } from "react";
 
-type PaymentDetails = {
-  cardNumber?: string;
-  cardHolder?: string;
-  expiry?: string;
-  iban?: string;
-  paypal?: string;
-};
-
 type UserData = {
   id: string;
   email: string;
   nickname: string;
   credits: number;
   createdAt: string;
-  paymentDetails?: PaymentDetails | null;
+  bankAccount?: string | null;
 };
 
 const LABEL: React.CSSProperties = {
@@ -63,12 +55,8 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Payment fields
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardHolder, setCardHolder] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [iban, setIban] = useState("");
-  const [paypal, setPaypal] = useState("");
+  // Payment field - pouze číslo účtu (IBAN)
+  const [bankAccount, setBankAccount] = useState("");
 
   useEffect(() => {
     fetch("/api/settings")
@@ -78,12 +66,7 @@ export default function SettingsPage() {
           setUser(d.user);
           setNickname(d.user.nickname);
           setEmail(d.user.email);
-          const pd = d.user.paymentDetails || {};
-          setCardNumber(pd.cardNumber || "");
-          setCardHolder(pd.cardHolder || "");
-          setExpiry(pd.expiry || "");
-          setIban(pd.iban || "");
-          setPaypal(pd.paypal || "");
+          setBankAccount(d.user.bankAccount || "");
         }
       })
       .catch(console.error)
@@ -127,17 +110,27 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
-  const savePayment = async () => {
+  const saveBankAccount = async () => {
+    // Základní validace IBAN formátu
+    const cleaned = bankAccount.replace(/\s/g, "").toUpperCase();
+    if (cleaned && !/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,}$/.test(cleaned)) {
+      showMsg("Neplatný formát IBAN (např. CZ65 0800 0000 1920 0014 5399)", false);
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentDetails: { cardNumber, cardHolder, expiry, iban, paypal } }),
+        body: JSON.stringify({ bankAccount: cleaned || null }),
       });
       const data = await res.json();
       if (!res.ok) showMsg(data.error || "Failed", false);
-      else showMsg("Payment details saved", true);
+      else {
+        showMsg("Číslo účtu uloženo", true);
+        setUser((u) => u ? { ...u, bankAccount: cleaned || null } : u);
+      }
     } catch { showMsg("Network error", false); }
     setSaving(false);
   };
@@ -153,6 +146,11 @@ export default function SettingsPage() {
     { id: "security", label: "Security" },
     { id: "payment", label: "Payment" },
   ];
+
+  const formatIban = (value: string) => {
+    const cleaned = value.replace(/\s/g, "").toUpperCase();
+    return cleaned.replace(/(.{4})/g, "$1 ").trim();
+  };
 
   return (
     <div style={{ width: "100%", maxWidth: 840, padding: "40px 24px 80px" }}>
@@ -349,111 +347,125 @@ export default function SettingsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 540 }}>
 
           <div style={{
-            padding: "14px 18px",
+            padding: "16px 20px",
             background: "rgba(212,175,55,0.04)",
             border: "1px solid rgba(212,175,55,0.15)",
             borderRadius: 2,
           }}>
             <p style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "0.82rem",
-              color: "rgba(212,175,55,0.7)",
+              fontSize: "0.85rem",
+              color: "rgba(212,175,55,0.8)",
+              margin: "0 0 6px",
+              fontWeight: 500,
+            }}>
+              Bankovní účet pro příjem plateb
+            </p>
+            <p style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "0.8rem",
+              color: "rgba(212,175,55,0.5)",
               margin: 0,
               lineHeight: 1.6,
             }}>
-              Payment details are stored securely and used for processing trades. Fields left blank will not be updated.
+              Kupující platí přes Stripe. Platby jsou přijaty na naší straně a odeslány
+              na váš účet. Zadejte IBAN ve formátu bez mezer nebo s mezerami po každých 4 číslicích.
             </p>
           </div>
 
-          {/* Card Details */}
           <div>
-            <SectionTitle>Card Details</SectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 22, marginTop: 16 }}>
-              <label style={LABEL}>
-                Card Number
-                <input
-                  style={INPUT}
-                  value={cardNumber}
-                  placeholder="•••• •••• •••• ••••"
-                  maxLength={19}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 16);
-                    setCardNumber(v.replace(/(.{4})/g, "$1 ").trim());
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)")}
-                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)")}
-                />
-              </label>
-
-              <label style={LABEL}>
-                Cardholder Name
-                <input
-                  style={INPUT}
-                  value={cardHolder}
-                  placeholder="Full name as on card"
-                  onChange={(e) => setCardHolder(e.target.value)}
-                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)")}
-                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)")}
-                />
-              </label>
-
-              <label style={{ ...LABEL, maxWidth: 160 }}>
-                Expiry Date
-                <input
-                  style={INPUT}
-                  value={expiry}
-                  placeholder="MM / YY"
-                  maxLength={7}
-                  onChange={(e) => {
-                    let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                    if (v.length >= 3) v = v.slice(0, 2) + " / " + v.slice(2);
-                    setExpiry(v);
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)")}
-                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)")}
-                />
-              </label>
-            </div>
-          </div>
-
-          {/* Bank / Alternative */}
-          <div>
-            <SectionTitle>Alternative Payment</SectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 22, marginTop: 16 }}>
+            <SectionTitle>Číslo bankovního účtu (IBAN)</SectionTitle>
+            <div style={{ marginTop: 20 }}>
               <label style={LABEL}>
                 IBAN
                 <input
-                  style={INPUT}
-                  value={iban}
-                  placeholder="CZ00 0000 0000 0000 0000 0000"
-                  onChange={(e) => setIban(e.target.value.toUpperCase())}
+                  style={{ ...INPUT, letterSpacing: "0.05em", fontFamily: "monospace, 'Cormorant Garamond'" }}
+                  value={bankAccount}
+                  placeholder="CZ65 0800 0000 1920 0014 5399"
+                  onChange={(e) => setBankAccount(formatIban(e.target.value))}
                   onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)")}
                   onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)")}
+                  maxLength={34}
                 />
               </label>
 
-              <label style={LABEL}>
-                PayPal Email
-                <input
-                  type="email"
-                  style={INPUT}
-                  value={paypal}
-                  placeholder="paypal@example.com"
-                  onChange={(e) => setPaypal(e.target.value)}
-                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(245,240,232,0.45)")}
-                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.12)")}
-                />
-              </label>
+              {/* Status badge */}
+              <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: user?.bankAccount
+                    ? "rgb(80, 200, 120)"
+                    : "rgba(255,255,255,0.15)",
+                  flexShrink: 0,
+                }} />
+                <span style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: "0.72rem",
+                  color: user?.bankAccount
+                    ? "rgba(80,200,120,0.8)"
+                    : "rgba(255,255,255,0.2)",
+                  letterSpacing: "0.06em",
+                }}>
+                  {user?.bankAccount
+                    ? `Účet nastaven: ${user.bankAccount.replace(/(.{4})/g, "$1 ").trim()}`
+                    : "Účet není nastaven – nebudete přijímat platby"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            padding: "14px 18px",
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 2,
+          }}>
+            <p style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "0.72rem",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.15)",
+              margin: "0 0 8px",
+            }}>
+              Podporované formáty
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {[
+                { country: "Česká republika", format: "CZ + 22 číslic" },
+                { country: "Slovensko", format: "SK + 22 číslic" },
+                { country: "EU (ostatní)", format: "2 písmena + 2 číslice + až 30 znaků" },
+              ].map((item) => (
+                <div key={item.country} style={{ display: "flex", gap: 12 }}>
+                  <span style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "0.78rem",
+                    color: "rgba(255,255,255,0.25)",
+                    minWidth: 140,
+                  }}>
+                    {item.country}
+                  </span>
+                  <span style={{
+                    fontFamily: "monospace",
+                    fontSize: "0.72rem",
+                    color: "rgba(255,255,255,0.15)",
+                  }}>
+                    {item.format}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
           <button
             className="btn-primary"
-            onClick={savePayment}
+            onClick={saveBankAccount}
             disabled={saving}
-            style={{ alignSelf: "flex-start", minWidth: 180 }}
+            style={{ alignSelf: "flex-start", minWidth: 200 }}
           >
-            {saving ? "Saving…" : "Save Payment Details"}
+            {saving ? "Ukládám…" : "Uložit číslo účtu"}
           </button>
         </div>
       )}

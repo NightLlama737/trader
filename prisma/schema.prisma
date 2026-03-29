@@ -14,7 +14,7 @@ model User {
   createdAt       DateTime        @default(now())
   password        String
   credits         Int             @default(0)
-  paymentDetails  Json?
+  bankAccount     String?
   models          Model[]
   offModels       OffModel[]
   renderedImages  RenderedImage[]
@@ -61,17 +61,19 @@ model OffModel {
 }
 
 model Purchase {
-  id         String   @id @default(cuid())
-  buyerId    String
-  sellerId   String
-  offModelId String
-  status     String   @default("PENDING")
-  buyerSeen  Boolean  @default(true)
-  sellerSeen Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  buyer      User     @relation("Buyer", fields: [buyerId], references: [id])
-  seller     User     @relation("Seller", fields: [sellerId], references: [id])
-  offModel   OffModel @relation(fields: [offModelId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  buyerId         String
+  sellerId        String
+  offModelId      String
+  status          String   @default("PENDING")
+  buyerSeen       Boolean  @default(true)
+  sellerSeen      Boolean  @default(true)
+  stripeSessionId String?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  buyer           User     @relation("Buyer", fields: [buyerId], references: [id])
+  seller          User     @relation("Seller", fields: [sellerId], references: [id])
+  offModel        OffModel @relation(fields: [offModelId], references: [id], onDelete: Cascade)
 }
 
 model RenderedImage {
@@ -122,5 +124,5 @@ model ModelGift {
   createdAt       DateTime @default(now())
   sender          User     @relation("Sender", fields: [senderId], references: [id])
   receiver        User     @relation("Receiver", fields: [receiverId], references: [id])
-  model   Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  model           Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
 }

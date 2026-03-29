@@ -8,16 +8,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 type OffModel = { id: string; key: string; name: string; description: string; price: number; userId: string };
 
+type PaymentState = "idle" | "requesting" | "pending_payment" | "paying" | "done" | "error";
+
 export default function ObjectView() {
   const searchParams = useSearchParams();
   const key = searchParams.get("key");
+  const wasCancelled = searchParams.get("purchase_cancelled") === "true";
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animFrameRef = useRef<number>(0);
   const [model, setModel] = useState<OffModel | null>(null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
-  const [purchasing, setPurchasing] = useState(false);
-  const [purchaseMsg, setPurchaseMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [paymentState, setPaymentState] = useState<PaymentState>("idle");
+  const [purchaseId, setPurchaseId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [sellerHasAccount, setSellerHasAccount] = useState<boolean | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -28,7 +33,16 @@ export default function ObjectView() {
     if (!key) return;
     fetch(`/api/offModels?key=${encodeURIComponent(key)}`)
       .then((r) => r.json())
-      .then((d) => setModel(d.model))
+      .then((d) => {
+        setModel(d.model);
+        // Zkontroluj, jestli má prodejce nastavený účet
+        if (d.model?.userId) {
+          fetch(`/api/seller/bankAccount?userId=${d.model.userId}`)
+            .then((r) => r.json())
+            .then((sd) => setSellerHasAccount(!!sd.hasBankAccount))
+            .catch(() => setSellerHasAccount(null));
+        }
+      })
       .catch(console.error);
   }, [key]);
 
@@ -94,10 +108,11 @@ export default function ObjectView() {
     };
   }, [model, key]);
 
-  const handlePurchase = async () => {
+  // Krok 1: Vytvoř purchase request
+  const handleRequestPurchase = async () => {
     if (!model) return;
-    setPurchasing(true);
-    setPurchaseMsg(null);
+    setPaymentState("requesting");
+    setErrorMsg(null);
     try {
       const res = await fetch("/api/purchase", {
         method: "POST",
@@ -106,14 +121,41 @@ export default function ObjectView() {
       });
       const data = await res.json();
       if (res.ok) {
-        setPurchaseMsg({ text: "Purchase request sent! The seller will be notified.", ok: true });
+        setPurchaseId(data.purchase.id);
+        setPaymentState("pending_payment");
       } else {
-        setPurchaseMsg({ text: data.error || "Failed to send purchase request", ok: false });
+        setErrorMsg(data.error || "Failed to create purchase request");
+        setPaymentState("error");
       }
     } catch {
-      setPurchaseMsg({ text: "Network error", ok: false });
+      setErrorMsg("Network error");
+      setPaymentState("error");
     }
-    setPurchasing(false);
+  };
+
+  // Krok 2: Zaplatit přes Stripe
+  const handlePayWithStripe = async () => {
+    if (!purchaseId) return;
+    setPaymentState("paying");
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purchaseId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.sessionUrl) {
+        // Přesměruj na Stripe Checkout
+        window.location.href = data.sessionUrl;
+      } else {
+        setErrorMsg(data.error || "Failed to start payment");
+        setPaymentState("pending_payment");
+      }
+    } catch {
+      setErrorMsg("Network error during payment");
+      setPaymentState("pending_payment");
+    }
   };
 
   const isOwner = myUserId && model && myUserId === model.userId;
@@ -142,33 +184,151 @@ export default function ObjectView() {
           <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(245,240,232,0.5)", fontSize: "0.95rem", lineHeight: 1.65 }}>
             {model.description}
           </p>
-          <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(245,240,232,0.7)", fontSize: "1.3rem", marginTop: "auto" }}>
+          <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(245,240,232,0.7)", fontSize: "1.5rem", marginTop: "auto", letterSpacing: "0.02em" }}>
             {model.price} €
           </p>
 
-          {purchaseMsg && (
+          {/* Cancelled banner */}
+          {wasCancelled && paymentState === "idle" && (
             <div style={{
               padding: "10px 14px",
-              background: purchaseMsg.ok ? "rgba(212,175,55,0.07)" : "rgba(210,90,90,0.07)",
-              border: `1px solid ${purchaseMsg.ok ? "rgba(212,175,55,0.3)" : "rgba(210,90,90,0.3)"}`,
+              background: "rgba(255,170,0,0.07)",
+              border: "1px solid rgba(255,170,0,0.25)",
               borderRadius: 2,
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "0.82rem",
-              color: purchaseMsg.ok ? "rgb(212,175,55)" : "rgba(210,90,90,0.9)",
-              lineHeight: 1.5,
+              fontSize: "0.8rem",
+              color: "rgba(255,190,60,0.85)",
             }}>
-              {purchaseMsg.text}
+              Platba byla zrušena. Můžete to zkusit znovu.
             </div>
           )}
 
-          {!isOwner && !purchaseMsg?.ok && (
-            <button
-              className="btn-primary"
-              style={{ marginTop: 4 }}
-              onClick={handlePurchase}
-              disabled={purchasing}
-            >
-              {purchasing ? "Sending request…" : "Request Purchase"}
+          {/* Error */}
+          {errorMsg && (
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(210,90,90,0.07)",
+              border: "1px solid rgba(210,90,90,0.3)",
+              borderRadius: 2,
+              fontSize: "0.82rem",
+              color: "rgba(210,90,90,0.9)",
+              lineHeight: 1.5,
+            }}>
+              {errorMsg}
+            </div>
+          )}
+
+          {/* STEP 1 – Request purchase */}
+          {!isOwner && paymentState === "idle" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {sellerHasAccount === false && (
+                <div style={{
+                  padding: "9px 12px",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 2,
+                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.25)",
+                  fontStyle: "italic",
+                }}>
+                  Prodejce ještě nenastavil číslo účtu. Platba může být zpožděna.
+                </div>
+              )}
+              <button className="btn-primary" onClick={handleRequestPurchase}>
+                Koupit
+              </button>
+            </div>
+          )}
+
+          {/* STEP 1 loading */}
+          {paymentState === "requesting" && (
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 2,
+              fontSize: "0.82rem",
+              color: "rgba(245,240,232,0.4)",
+              fontStyle: "italic",
+            }}>
+              Připravuji objednávku…
+            </div>
+          )}
+
+          {/* STEP 2 – Pay with Stripe */}
+          {paymentState === "pending_payment" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{
+                padding: "12px 14px",
+                background: "rgba(212,175,55,0.07)",
+                border: "1px solid rgba(212,175,55,0.3)",
+                borderRadius: 2,
+                fontSize: "0.82rem",
+                color: "rgb(212,175,55)",
+                lineHeight: 1.6,
+              }}>
+                ✓ Objednávka vytvořena. Dokončete platbu přes Stripe.
+              </div>
+
+              <button
+                className="btn-primary"
+                onClick={handlePayWithStripe}
+                style={{
+                  background: "rgba(99,91,255,0.1)",
+                  borderColor: "rgba(99,91,255,0.4)",
+                  color: "rgba(180,175,255,0.9)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(99,91,255,0.18)";
+                  e.currentTarget.style.borderColor = "rgba(99,91,255,0.7)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(99,91,255,0.1)";
+                  e.currentTarget.style.borderColor = "rgba(99,91,255,0.4)";
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <rect x="1" y="4" width="22" height="16" rx="2" />
+                  <line x1="1" y1="10" x2="23" y2="10" />
+                </svg>
+                Zaplatit {model.price} € přes Stripe
+              </button>
+
+              <p style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: "0.68rem",
+                color: "rgba(255,255,255,0.15)",
+                margin: 0,
+                textAlign: "center",
+                fontStyle: "italic",
+              }}>
+                Budete přesměrováni na zabezpečenou platební stránku Stripe
+              </p>
+            </div>
+          )}
+
+          {/* Paying state */}
+          {paymentState === "paying" && (
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(99,91,255,0.07)",
+              border: "1px solid rgba(99,91,255,0.2)",
+              borderRadius: 2,
+              fontSize: "0.82rem",
+              color: "rgba(180,175,255,0.8)",
+              fontStyle: "italic",
+            }}>
+              Přesměrovávám na Stripe…
+            </div>
+          )}
+
+          {/* Error – retry */}
+          {paymentState === "error" && (
+            <button className="btn-ghost" onClick={() => setPaymentState("idle")}>
+              Zkusit znovu
             </button>
           )}
 
@@ -178,7 +338,6 @@ export default function ObjectView() {
               background: "rgba(255,255,255,0.02)",
               border: "1px solid rgba(255,255,255,0.06)",
               borderRadius: 2,
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontSize: "0.78rem",
               color: "rgba(255,255,255,0.25)",
               fontStyle: "italic",

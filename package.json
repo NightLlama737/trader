@@ -21,6 +21,7 @@
     "prisma": "^6.19.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "stripe": "^21.0.1",
     "three": "^0.181.2"
   },
   "devDependencies": {
