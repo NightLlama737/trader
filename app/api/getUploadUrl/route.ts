@@ -27,7 +27,12 @@ export async function POST(req: Request) {
       }
       const ext = fileName.includes(".") ? fileName.split(".").pop() : "";
       const uniqueName = `${crypto.randomUUID()}${ext ? "." + ext : ""}`;
-      key = `models/${userId}/${uniqueName}`;
+      // Pokud je contentType obrázek, použij renders/, jinak models/
+      if (contentType && contentType.startsWith("image/")) {
+        key = `renders/${userId}/${uniqueName}`;
+      } else {
+        key = `models/${userId}/${uniqueName}`;
+      }
     }
 
     if (!contentType) {
