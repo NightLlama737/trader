@@ -1,11 +1,9 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { PutObjectCommand, GetObjectCommand, CopyObjectCommand } from "@aws-sdk/client-s3";
-import { s3 } from "@/lib/S3";
 import crypto from "crypto";
 
-// POST /api/purchase - buyer initiates purchase
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -23,7 +21,6 @@ export async function POST(req: NextRequest) {
     if (!offModel) return NextResponse.json({ error: "Model not found" }, { status: 404 });
     if (offModel.userId === userId) return NextResponse.json({ error: "Cannot buy your own model" }, { status: 400 });
 
-    // Check if there's already a pending purchase
     const existing = await prisma.purchase.findFirst({
       where: { buyerId: userId, offModelId, status: "PENDING" },
     }).catch(() => null);
@@ -41,12 +38,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ purchase });
   } catch (err) {
-    console.error("PURCHASE ERROR:", err);
+    console.error(err);
     return NextResponse.json({ error: "Failed to create purchase" }, { status: 500 });
   }
 }
 
-// PUT /api/purchase - seller responds to purchase
 export async function PUT(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -79,38 +75,20 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ ok: true, status: "declined" });
     }
 
-    // Accept: copy the S3 object to buyer's folder and create Model in DB
     const offModel = purchase.offModel;
-    const sourceKey = offModel.key;
-    const fileName = sourceKey.split("/").pop() || `${crypto.randomUUID()}.glb`;
-    const destKey = `models/${purchase.buyerId}/${fileName}`;
-
-    // Copy object in S3
-    await s3.send(
-      new CopyObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET!,
-        CopySource: `${process.env.AWS_S3_BUCKET}/${sourceKey}`,
-        Key: destKey,
-      })
-    );
-
-    // Create model record for buyer
     await prisma.model.create({
       data: {
         userId: purchase.buyerId,
-        key: destKey,
+        key: offModel.key,
       },
     });
-
-    // Update purchase status
     await prisma.purchase.update({
       where: { id: purchaseId },
       data: { status: "ACCEPTED", buyerSeen: false },
     });
-
-    return NextResponse.json({ ok: true, status: "accepted", destKey });
+    return NextResponse.json({ ok: true, status: "accepted" });
   } catch (err) {
-    console.error("PURCHASE RESPOND ERROR:", err);
+    console.error(err);
     return NextResponse.json({ error: "Failed to process purchase" }, { status: 500 });
   }
 }

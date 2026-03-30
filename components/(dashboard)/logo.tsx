@@ -8,8 +8,8 @@ export default function Logo() {
       }}
       src="/logo_invert.jpg"
       alt="Logo"
-      width={200} // set appropriate width
-      height={100} // set appropriate height
+      width={200}
+      height={100}
     />
   );
 }

@@ -155,7 +155,6 @@ export default function ObjectView() {
     }}>
       <div style={{ display: "grid", gridTemplateColumns: "1400px 280px", gap: 20 }}>
 
-        {/* 3D viewer */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div
             ref={mountRef}
@@ -172,7 +171,6 @@ export default function ObjectView() {
           </button>
         </div>
 
-        {/* Sidebar */}
         <div style={{
           padding: "28px 20px",
           height: "550px",

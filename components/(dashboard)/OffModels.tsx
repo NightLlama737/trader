@@ -113,7 +113,6 @@ export default function OffModels() {
   return (
     <div style={{ display: "flex", width: "100vw", minHeight: "100vh", paddingTop: 80 }}>
 
-      {/* ── Sidebar ── */}
       <aside style={{
         position: "fixed", left: 0, top: 80,
         width: 210, height: "calc(100vh - 80px)",
@@ -181,7 +180,6 @@ export default function OffModels() {
         <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "14px 0" }} />
       </aside>
 
-      {/* ── Main grid ── */}
       <main style={{ marginLeft: 210, flex: 1, padding: "44px 40px" }}>
         <h1 style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",

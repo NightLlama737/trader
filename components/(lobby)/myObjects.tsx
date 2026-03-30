@@ -121,7 +121,6 @@ export default function MyObjects() {
     });
 
     return () => { renderers.forEach((r) => r.dispose()); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [models, filter]);
 
   const handleDeleteRender = async (img: RenderedImage, e: React.MouseEvent) => {
@@ -170,7 +169,6 @@ export default function MyObjects() {
   return (
     <div style={{ display: "flex", width: "100vw", minHeight: "100vh", paddingTop: 80 }}>
 
-      {/* ── Sidebar ── */}
       <aside style={{
         position: "fixed", left: 0, top: 80,
         width: 210, height: "calc(100vh - 80px)",
@@ -252,7 +250,6 @@ export default function MyObjects() {
         </div>
       </aside>
 
-      {/* ── Main grid ── */}
       <main style={{ marginLeft: 210, flex: 1, padding: "44px 40px" }}>
         <h1 style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
@@ -265,7 +262,6 @@ export default function MyObjects() {
           </span>
         </h1>
 
-        {/* ── Renders Grid ── */}
         {filter === "renders" && (
           <>
             {loadingRenders ? (
@@ -311,14 +307,12 @@ export default function MyObjects() {
                       if (btn) btn.style.opacity = "0";
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={img.url}
                       alt="render"
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
 
-                    {/* Delete button */}
                     <button
                       className="delete-btn"
                       onClick={(e) => handleDeleteRender(img, e)}
@@ -343,7 +337,6 @@ export default function MyObjects() {
                       {deletingId === img.id ? "…" : "delete"}
                     </button>
 
-                    {/* Date label */}
                     <div style={{
                       position: "absolute", bottom: 0, left: 0, right: 0,
                       padding: "18px 10px 8px",
@@ -364,7 +357,6 @@ export default function MyObjects() {
           </>
         )}
 
-        {/* ── Models Grid ── */}
         {filter !== "renders" && (
           <>
             {filtered.length === 0 ? (
@@ -433,7 +425,6 @@ export default function MyObjects() {
         )}
       </main>
 
-      {/* ── Lightbox ── */}
       {lightboxImg && (
         <div
           onClick={() => setLightboxImg(null)}
@@ -461,13 +452,11 @@ export default function MyObjects() {
             }}
           >
             <style>{`@keyframes scaleIn { from { transform: scale(0.94); opacity: 0 } to { transform: scale(1); opacity: 1 } }`}</style>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={lightboxImg.url}
               alt="render"
               style={{ display: "block", maxWidth: "100%", maxHeight: "88vh", objectFit: "contain" }}
             />
-            {/* Top bar */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0,
               padding: "10px 14px",

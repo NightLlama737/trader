@@ -24,7 +24,6 @@ export default function AddObject() {
     setProgress(0);
 
     try {
-      // 1. Get presigned upload URL — server generates the key
       const urlRes = await fetch("/api/getUploadUrl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,7 +42,6 @@ export default function AddObject() {
 
       if (!key) throw new Error("Server did not return a key");
 
-      // 2. Upload directly to S3 via presigned URL (XHR for progress)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -68,7 +66,6 @@ export default function AddObject() {
         xhr.send(file);
       });
 
-      // 3. Save record to database
       const saveRes = await fetch("/api/addObject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,7 +136,6 @@ export default function AddObject() {
         </p>
       )}
 
-      {/* Progress bar */}
       {uploading && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{
@@ -169,7 +165,6 @@ export default function AddObject() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div style={{
           padding: "10px 14px",

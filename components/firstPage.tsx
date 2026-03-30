@@ -16,7 +16,6 @@ export default function Home() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      {/* HERO */}
       <section
         style={{
           textAlign: "center",
@@ -48,7 +47,6 @@ export default function Home() {
         
       </section>
 
-      {/* FEATURES */}
       <section
         style={{
           display: "grid",
@@ -88,7 +86,6 @@ export default function Home() {
         ))}
       </section>
 
-      {/* CTA */}
       <section
         style={{
           textAlign: "center",

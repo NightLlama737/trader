@@ -35,7 +35,6 @@ export default function ObjectView() {
       .then((r) => r.json())
       .then((d) => {
         setModel(d.model);
-        // Zkontroluj, jestli má prodejce nastavený účet
         if (d.model?.userId) {
           fetch(`/api/seller/bankAccount?userId=${d.model.userId}`)
             .then((r) => r.json())
@@ -108,7 +107,6 @@ export default function ObjectView() {
     };
   }, [model, key]);
 
-  // Krok 1: Vytvoř purchase request
   const handleRequestPurchase = async () => {
     if (!model) return;
     setPaymentState("requesting");
@@ -133,7 +131,6 @@ export default function ObjectView() {
     }
   };
 
-  // Krok 2: Zaplatit přes Stripe
   const handlePayWithStripe = async () => {
     if (!purchaseId) return;
     setPaymentState("paying");
@@ -146,7 +143,6 @@ export default function ObjectView() {
       });
       const data = await res.json();
       if (res.ok && data.sessionUrl) {
-        // Přesměruj na Stripe Checkout
         window.location.href = data.sessionUrl;
       } else {
         setErrorMsg(data.error || "Failed to start payment");
@@ -188,7 +184,6 @@ export default function ObjectView() {
             {model.price} €
           </p>
 
-          {/* Cancelled banner */}
           {wasCancelled && paymentState === "idle" && (
             <div style={{
               padding: "10px 14px",
@@ -202,7 +197,6 @@ export default function ObjectView() {
             </div>
           )}
 
-          {/* Error */}
           {errorMsg && (
             <div style={{
               padding: "10px 14px",
@@ -217,7 +211,6 @@ export default function ObjectView() {
             </div>
           )}
 
-          {/* STEP 1 – Request purchase */}
           {!isOwner && paymentState === "idle" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {sellerHasAccount === false && (
@@ -239,7 +232,6 @@ export default function ObjectView() {
             </div>
           )}
 
-          {/* STEP 1 loading */}
           {paymentState === "requesting" && (
             <div style={{
               padding: "10px 14px",
@@ -254,7 +246,6 @@ export default function ObjectView() {
             </div>
           )}
 
-          {/* STEP 2 – Pay with Stripe */}
           {paymentState === "pending_payment" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{
@@ -310,7 +301,6 @@ export default function ObjectView() {
             </div>
           )}
 
-          {/* Paying state */}
           {paymentState === "paying" && (
             <div style={{
               padding: "10px 14px",
@@ -325,7 +315,6 @@ export default function ObjectView() {
             </div>
           )}
 
-          {/* Error – retry */}
           {paymentState === "error" && (
             <button className="btn-ghost" onClick={() => setPaymentState("idle")}>
               Zkusit znovu

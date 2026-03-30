@@ -46,16 +46,13 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
-  // Profile fields
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
 
-  // Security fields
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Payment field - pouze číslo účtu (IBAN)
   const [bankAccount, setBankAccount] = useState("");
 
   useEffect(() => {
@@ -111,7 +108,6 @@ export default function SettingsPage() {
   };
 
   const saveBankAccount = async () => {
-    // Základní validace IBAN formátu
     const cleaned = bankAccount.replace(/\s/g, "").toUpperCase();
     if (cleaned && !/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,}$/.test(cleaned)) {
       showMsg("Neplatný formát IBAN (např. CZ65 0800 0000 1920 0014 5399)", false);
@@ -154,7 +150,6 @@ export default function SettingsPage() {
 
   return (
     <div style={{ width: "100%", maxWidth: 840, padding: "40px 24px 80px" }}>
-      {/* Header */}
       <div style={{ marginBottom: 40 }}>
         <h1 style={{
           fontFamily: "'Playfair Display', Georgia, serif",
@@ -179,7 +174,6 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Tabs */}
       <div style={{
         display: "flex",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
@@ -210,7 +204,6 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {/* Toast */}
       {msg && (
         <div style={{
           marginBottom: 24,
@@ -226,7 +219,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* PROFILE TAB */}
       {activeTab === "profile" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 28, maxWidth: 480 }}>
           <SectionTitle>Personal Information</SectionTitle>
@@ -290,7 +282,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* SECURITY TAB */}
       {activeTab === "security" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 28, maxWidth: 480 }}>
           <SectionTitle>Change Password</SectionTitle>
@@ -342,7 +333,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* PAYMENT TAB */}
       {activeTab === "payment" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 540 }}>
 
@@ -389,7 +379,6 @@ export default function SettingsPage() {
                 />
               </label>
 
-              {/* Status badge */}
               <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{
                   width: 6,

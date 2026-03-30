@@ -34,7 +34,6 @@ export default function AddRenderedImage() {
     setProgress(0);
 
     try {
-      // 1. Získání presigned upload URL z API
       const urlRes = await fetch("/api/getUploadUrl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,7 +51,6 @@ export default function AddRenderedImage() {
 
       const { uploadUrl, key } = await urlRes.json();
 
-      // 2. Přímý upload obrázku do S3 přes presigned URL (XHR pro progress)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -77,7 +75,6 @@ export default function AddRenderedImage() {
         xhr.send(file);
       });
 
-      // 3. Uložení záznamu do databáze přes API
       const saveRes = await fetch("/api/addRenderedImage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -158,7 +155,6 @@ export default function AddRenderedImage() {
         style={{ display: "none" }}
       />
 
-      {/* Preview */}
       {preview ? (
         <div
           onClick={() => fileInputRef.current?.click()}
@@ -227,7 +223,6 @@ export default function AddRenderedImage() {
         />
       </label>
 
-      {/* Progress bar */}
       {uploading && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{
@@ -257,7 +252,6 @@ export default function AddRenderedImage() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div style={{
           padding: "10px 14px",

@@ -84,8 +84,6 @@ export default function NotificationBell() {
     setLoading(false);
   };
 
-  // The sender already copied the file and created the Model record via /api/giftModel/confirm.
-  // The receiver just needs to mark the gift notification as seen.
   const handleAcceptGift = async (giftId: string) => {
     setLoading(true);
     try {

@@ -13,7 +13,6 @@ export default function Modal({ open, onClose, children }: MedalsProps) {
     if (open) {
       document.documentElement.style.overflow = "hidden";
       
-      // Handle ESC key
       const handleEscKey = (event: KeyboardEvent) => {
         if (event.key === "Escape") {
           onClose();

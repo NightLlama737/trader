@@ -1,4 +1,3 @@
-// app/dashboard/purchaseSuccess/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,8 +16,6 @@ export default function PurchaseSuccess() {
       return;
     }
 
-    // Ověř platbu na backendu (webhook by již měl být zpracován)
-    // Zde jen zobrazíme potvrzení a přesměrujeme
     const timer = setTimeout(() => {
       setStatus("success");
     }, 1500);

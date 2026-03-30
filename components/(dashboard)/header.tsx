@@ -52,7 +52,6 @@ export default function Header({ nickname }: { nickname?: string }) {
 
   return (
     <>
-      {/* Nav buttons */}
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "4px" }}>
         <button className="btn-ghost" onClick={() => router.push("/lobby")}>
           <h1 style={{

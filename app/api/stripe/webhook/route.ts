@@ -48,7 +48,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (!purchase || purchase.status === "ACCEPTED") {
-        // Idempotent - already processed
         return NextResponse.json({ ok: true });
       }
 
@@ -56,7 +55,6 @@ export async function POST(req: NextRequest) {
       const fileName = sourceKey.split("/").pop() || `${crypto.randomUUID()}.glb`;
       const destKey = `models/${purchase.buyerId}/${crypto.randomUUID()}-${fileName}`;
 
-      // Zkopíruj soubor v S3 pro kupce
       await s3.send(
         new CopyObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET!,
@@ -65,7 +63,6 @@ export async function POST(req: NextRequest) {
         })
       );
 
-      // Vytvoř záznam modelu pro kupce
       await prisma.model.create({
         data: {
           userId: purchase.buyerId,
@@ -73,7 +70,6 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Aktualizuj purchase jako zaplacený a přijatý
       await prisma.purchase.update({
         where: { id: purchaseId },
         data: {
@@ -95,7 +91,6 @@ export async function POST(req: NextRequest) {
     const purchaseId = session.metadata?.purchaseId;
 
     if (purchaseId) {
-      // Zruš purchase pokud vypršel
       await prisma.purchase.update({
         where: { id: purchaseId },
         data: { status: "DECLINED", buyerSeen: false },
