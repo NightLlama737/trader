@@ -30,7 +30,9 @@ export default async function ProfileLayout({ children }: Readonly<{ children: R
           alignItems: "center",
           padding: "10px 28px",
           zIndex: 100,
+          maxWidth: "100vw",
         }}
+        className="responsive-header"
       >
         <HeaderProfile nickname={nickname} />
       </header>
@@ -43,7 +45,10 @@ export default async function ProfileLayout({ children }: Readonly<{ children: R
           alignItems: "center",
           background: "#0a0a0a",
           minHeight: "100vh",
+          width: "100vw",
+          boxSizing: "border-box",
         }}
+        className="responsive-content"
       >
         {children}
       </div>

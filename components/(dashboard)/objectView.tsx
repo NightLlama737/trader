@@ -166,13 +166,27 @@ export default function ObjectView() {
       fontFamily: "'Cormorant Garamond', Georgia, serif",
       position: "relative",
     }}>
-      <div style={{ display: "grid", gridTemplateColumns: "800px 300px", gap: 20 }}>
-        <div ref={mountRef} style={{ width: 800, height: 500, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "800px 300px",
+          gap: 20,
+          maxWidth: "100vw",
+        }}
+        className="objectview-grid"
+      >
+        <div
+          ref={mountRef}
+          style={{ width: 800, height: 500, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", maxWidth: "100vw", minHeight: 180 }}
+          className="three-canvas"
+        />
 
         <div style={{
           padding: "32px 28px", background: "#111",
           border: "1px solid rgba(255,255,255,0.07)", borderRadius: 2,
           display: "flex", flexDirection: "column", gap: 14,
+          maxWidth: 340,
+          minWidth: 0,
         }}>
           <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400, fontSize: "1.2rem", color: "#fff" }}>
             {model.name}

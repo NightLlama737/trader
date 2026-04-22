@@ -70,7 +70,7 @@ export async function PUT(req: NextRequest) {
     if (action === "decline") {
       await prisma.purchase.update({
         where: { id: purchaseId },
-        data: { status: "DECLINED", buyerSeen: false },
+        data: { status: "DECLINED"},
       });
       return NextResponse.json({ ok: true, status: "declined" });
     }
@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest) {
     });
     await prisma.purchase.update({
       where: { id: purchaseId },
-      data: { status: "ACCEPTED", buyerSeen: false },
+      data: { status: "ACCEPTED" },
     });
     return NextResponse.json({ ok: true, status: "accepted" });
   } catch (err) {

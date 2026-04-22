@@ -77,8 +77,7 @@ button {
 }
 button:disabled {
   opacity: 0.3;
-  cursor: not-allowed;
-}
+  cursor: not-allowed; }
 button:hover {
   background: transparent;
   color: var(--white);
@@ -89,7 +88,7 @@ button:hover {
   font-family: var(--serif-display);
   font-size: 0.9rem;
   letter-spacing: 0.07em;
-  color: var(--cream-dim);
+
   background: transparent;
   padding: 7px 18px;
   border-radius: 2px;

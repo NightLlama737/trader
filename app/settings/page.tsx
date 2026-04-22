@@ -29,7 +29,10 @@ export default async function Settings() {
         alignItems: "center",
         padding: "10px 28px",
         zIndex: 100,
-      }}>
+        maxWidth: "100vw",
+      }}
+      className="responsive-header"
+      >
         <Header nickname={nickname} />
       </header>
       <div style={{
@@ -39,7 +42,11 @@ export default async function Settings() {
         background: "#0a0a0a",
         minHeight: "100vh",
         paddingTop: 90,
-      }}>
+        width: "100vw",
+        boxSizing: "border-box",
+      }}
+      className="responsive-content"
+      >
         <SettingsPage />
       </div>
     </>

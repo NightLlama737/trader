@@ -16,18 +16,13 @@ export async function POST(req: NextRequest) {
         where: { id, receiverId: userId },
         data: { seen: true },
       });
-    } else if (type === "purchase_update") {
-      await prisma.purchase.updateMany({
-        where: { id, buyerId: userId },
-        data: { buyerSeen: true },
-      }).catch(() => {});
+    
     } else if (type === "sale_confirmation") {
       await prisma.purchase.updateMany({
         where: { id, sellerId: userId },
         data: { sellerSeen: true },
       }).catch(() => {});
     } else if (type === "friend_removed") {
-      // id here is the Notification record id (without "notif-" prefix)
       await (prisma as any).notification.updateMany({
         where: { id, userId },
         data: { seen: true },

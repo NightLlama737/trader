@@ -301,7 +301,8 @@ export default function ProfileCard({ nickname }: { nickname: string }) {
                 {/* Three.js canvas container */}
                 <div
                   ref={(el) => { if (el) containerRefs.current.set(model.key, el); }}
-                  style={{ width: "100%", height: 200, background: "#0e0e0e", position: "relative" }}
+                  style={{ width: "100%", height: 200, background: "#0e0e0e", position: "relative", maxWidth: "100vw", minHeight: 140 }}
+                  className="three-canvas"
                 >
                   {loadingModels[model.key] && (
                     <div style={{

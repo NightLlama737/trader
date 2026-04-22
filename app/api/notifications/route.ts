@@ -100,7 +100,6 @@ export async function GET() {
         where: {
           buyerId: userId,
           status: { in: ["ACCEPTED", "DECLINED"] },
-          buyerSeen: false,
         },
         include: {
           seller: { select: { id: true, nickname: true } },
